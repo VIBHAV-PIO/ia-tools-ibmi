@@ -1,6 +1,6 @@
 {
   "servers": {
-    "ibmi-ia-tools": {
+    "ia-tools-ibmi": {
       "type": "http",
       "url": "http://localhost:3010/mcp"
     }

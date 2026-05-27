@@ -2,6 +2,7 @@
 node_modules/
 CLAUDE.md
 .mcp.json
+.vscode/mcp.json
 # Ignore .claude except for ia skill and ia-spec command
 .claude/*
 !.claude/skills/

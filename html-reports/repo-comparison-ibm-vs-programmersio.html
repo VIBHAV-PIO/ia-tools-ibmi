@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Repo Comparison — IBM/ibmi-mcp-server vs Programmersio-IBMi/ia-mcp-ibmi</title>
+<style>
+  :root {
+    --ibm-blue: #0f62fe;
+    --pio-orange: #ff6b00;
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --green: #16a34a;
+    --red: #dc2626;
+    --amber: #d97706;
+    --code-bg: #0f172a;
+    --code-fg: #e2e8f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  header {
+    background: linear-gradient(135deg, #0f62fe 0%, #ff6b00 100%);
+    color: white;
+    padding: 48px 32px 36px;
+  }
+  header .wrap { max-width: 1180px; margin: 0 auto; }
+  header h1 { margin: 0 0 8px; font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+  header p.subtitle { margin: 0; opacity: 0.95; font-size: 16px; max-width: 880px; }
+  header .meta { margin-top: 16px; font-size: 13px; opacity: 0.85; }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px; }
+  section { margin-bottom: 36px; }
+  h2 {
+    font-size: 22px;
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    display: inline-flex;
+    width: 28px; height: 28px;
+    background: var(--ibm-blue);
+    color: white;
+    border-radius: 6px;
+    align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  h3 { font-size: 17px; margin: 20px 0 8px; }
+  p { margin: 8px 0; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+  .repo-card { padding: 18px 20px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); }
+  .repo-card.ibm { border-top: 4px solid var(--ibm-blue); }
+  .repo-card.pio { border-top: 4px solid var(--pio-orange); }
+  .repo-card h3 { margin: 0 0 8px; font-size: 16px; }
+  .repo-card .url { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); word-break: break-all; }
+  .repo-card dl { margin: 12px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; }
+  .repo-card dt { color: var(--muted); }
+  .repo-card dd { margin: 0; font-weight: 500; }
+
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #f3f4f6; font-weight: 600; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  td.aspect { font-weight: 600; width: 22%; color: #374151; }
+  td.ibm { width: 39%; }
+  td.pio { width: 39%; }
+  td.ibm strong, td.pio strong { color: var(--text); }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  .badge.new { background: #dcfce7; color: var(--green); }
+  .badge.changed { background: #fef3c7; color: var(--amber); }
+  .badge.removed { background: #fee2e2; color: var(--red); }
+  .badge.same { background: #e0e7ff; color: #4338ca; }
+
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  code { background: #eef2ff; color: #3730a3; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 14px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+
+  .commits { list-style: none; padding: 0; margin: 0; }
+  .commits li {
+    display: grid;
+    grid-template-columns: 90px 100px 1fr;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 13.5px;
+    align-items: baseline;
+  }
+  .commits li:last-child { border-bottom: none; }
+  .commits .sha { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--ibm-blue); font-weight: 600; }
+  .commits .date { color: var(--muted); font-size: 12.5px; }
+  .commits .msg { color: var(--text); }
+  .commits .msg .tag {
+    display: inline-block;
+    font-size: 10.5px;
+    background: #ede9fe;
+    color: #5b21b6;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .commits .msg .tag.feat { background: #dcfce7; color: var(--green); }
+  .commits .msg .tag.fix { background: #fee2e2; color: var(--red); }
+  .commits .msg .tag.chore { background: #e0e7ff; color: #4338ca; }
+  .commits .msg .tag.initial { background: #fef3c7; color: var(--amber); }
+
+  .callout {
+    border-left: 4px solid var(--pio-orange);
+    background: #fff7ed;
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .callout.info {
+    border-left-color: var(--ibm-blue);
+    background: #eff6ff;
+  }
+  .callout strong { color: var(--text); }
+
+  .filetree {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .filetree .added { color: #4ade80; }
+  .filetree .removed { color: #f87171; text-decoration: line-through; }
+  .filetree .changed { color: #fbbf24; }
+  .filetree .same { color: #94a3b8; }
+
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+  .stat {
+    flex: 1; min-width: 160px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stat .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .stat .value.blue { color: var(--ibm-blue); }
+  .stat .value.orange { color: var(--pio-orange); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+  }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 22px; margin-bottom: 24px; }
+  .toc h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .toc ol { margin: 0; padding-left: 22px; columns: 2; column-gap: 24px; font-size: 14px; }
+  .toc a { color: var(--ibm-blue); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>IBM/ibmi-mcp-server &nbsp;vs&nbsp; Programmersio-IBMi/ia-mcp-ibmi</h1>
+    <p class="subtitle">
+      A deep comparison of the IBM upstream MCP server for IBM i and the Programmers.io commercial fork that bundles the Impact Analysis (iA) SQL toolset behind a license gate. Based on all commits, file structure, package metadata, and code diffs as of 2026-05-26.
+    </p>
+    <p class="meta">Report generated 2026-05-26 &nbsp;·&nbsp; IBM HEAD: <code style="color:#fff;background:rgba(0,0,0,0.25)">9a774d2</code> (2026-04-20) &nbsp;·&nbsp; iA HEAD: <code style="color:#fff;background:rgba(0,0,0,0.25)">8e0e1e6</code> (2026-05-25)</p>
+  </div>
+</header>
+
+<main>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#tldr">TL;DR</a></li>
+    <li><a href="#repos">Repository facts at a glance</a></li>
+    <li><a href="#relationship">Relationship: fork or hard copy?</a></li>
+    <li><a href="#commits">Every commit in the iA repo</a></li>
+    <li><a href="#diffmatrix">Difference matrix</a></li>
+    <li><a href="#license">License enforcement (the headline feature)</a></li>
+    <li><a href="#tools">Bundled tools: examples vs iA</a></li>
+    <li><a href="#distribution">Distribution &amp; release pipeline</a></li>
+    <li><a href="#filetree">File-tree differences</a></li>
+    <li><a href="#takeaways">Bottom line</a></li>
+  </ol>
+</div>
+
+<section id="tldr">
+  <h2><span class="num">1</span>TL;DR</h2>
+  <div class="card">
+    <p><strong>Programmersio-IBMi/ia-mcp-ibmi is a hard fork of IBM/ibmi-mcp-server v0.5.1.</strong> It is <em>not</em> a GitHub fork — the parent field is <code>null</code> and the initial commit is a clean import. Twelve commits over ten days (May 15–25, 2026) transform it into a Programmers.io-branded commercial product.</p>
+    <p>Three substantive changes ride on top of the upstream code:</p>
+    <ol>
+      <li><strong>Rebranding</strong> from <code>@ibm/ibmi-mcp-server</code> → <code>@programmersio-ibmi/ia-mcp-server</code> (mechanical, ~35 files).</li>
+      <li><strong>License enforcement</strong> — a runtime gate that polls a customer-hosted validator, blocks MCP requests with a branded JSON-RPC <code>-32001</code> error when the license is invalid, and never exits the process (~1,500 LOC added across two source files, two test files, mock validator, and wiring).</li>
+      <li><strong>Bundled iA tooling</strong> — IBM's example YAML toolsets (developer / performance / security / sys-admin / sample) are removed, replaced with a single <code>tools/impact-analysis.yaml</code> (104 KB, 49 read-only SQL tools for Impact Analysis on IBM i).</li>
+    </ol>
+    <p>Plus: distribution moves from public npm to private GitHub Packages, an Apache-2.0 <code>NOTICE</code> is added for attribution, and the upstream-merge workflow is retargeted to <code>IBM/ibmi-mcp-server</code> with a <code>merge=ours</code> driver to protect branded paths.</p>
+  </div>
+</section>
+
+<section id="repos">
+  <h2><span class="num">2</span>Repository facts at a glance</h2>
+  <div class="grid-2">
+    <div class="repo-card ibm">
+      <h3>IBM/ibmi-mcp-server</h3>
+      <div class="url">github.com/IBM/ibmi-mcp-server</div>
+      <dl>
+        <dt>Description</dt><dd>MCP server for IBM i systems</dd>
+        <dt>Created</dt><dd>2025-10-01</dd>
+        <dt>Last pushed</dt><dd>2026-04-20</dd>
+        <dt>Stars / Forks</dt><dd>65 ⭐ / 28 🍴</dd>
+        <dt>Open issues</dt><dd>23</dd>
+        <dt>Language</dt><dd>TypeScript</dd>
+        <dt>License</dt><dd>Apache-2.0</dd>
+        <dt>Latest version</dt><dd>0.5.1</dd>
+        <dt>Primary author</dt><dd>Adam Shedivy (IBM)</dd>
+        <dt>Distribution</dt><dd>Public npm (<code>registry.npmjs.org</code>)</dd>
+      </dl>
+    </div>
+    <div class="repo-card pio">
+      <h3>Programmersio-IBMi/ia-mcp-ibmi</h3>
+      <div class="url">github.com/Programmersio-IBMi/ia-mcp-ibmi</div>
+      <dl>
+        <dt>Description</dt><dd>iA MCP Server</dd>
+        <dt>Created</dt><dd>2026-05-15</dd>
+        <dt>Last pushed</dt><dd>2026-05-25</dd>
+        <dt>Stars / Forks</dt><dd>0 ⭐ / 0 🍴 (private distribution)</dd>
+        <dt>Open issues</dt><dd>0</dd>
+        <dt>Language</dt><dd>TypeScript</dd>
+        <dt>License</dt><dd>Apache-2.0 + commercial license gate</dd>
+        <dt>Latest version</dt><dd>0.6.1</dd>
+        <dt>Primary author</dt><dd>Anurag Garg (Programmers.io)</dd>
+        <dt>Distribution</dt><dd>GitHub Packages (<code>npm.pkg.github.com</code>, private)</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">iA commits</div><div class="value orange">12</div></div>
+    <div class="stat"><div class="label">iA dev window</div><div class="value">10 days</div></div>
+    <div class="stat"><div class="label">Files in initial fork</div><div class="value blue">~35 rebranded</div></div>
+    <div class="stat"><div class="label">License module LOC</div><div class="value orange">~1,500</div></div>
+    <div class="stat"><div class="label">Bundled SQL tools</div><div class="value orange">49</div></div>
+  </div>
+</section>
+
+<section id="relationship">
+  <h2><span class="num">3</span>Relationship: fork or hard copy?</h2>
+  <div class="card">
+    <p>The GitHub API reports <code>parent: null</code> and <code>source: null</code> for the iA repo — it is <strong>not</strong> a GitHub-managed fork. Instead, the contents of IBM/ibmi-mcp-server at v0.5.1 were committed as a single initial commit by user <code>khushi-pio</code> on 2026-05-15. This buys editorial freedom (rename freely, rewrite history, never expose the fork relationship in GitHub's UI) at the cost of losing GitHub's automatic "X commits behind upstream" tracking.</p>
+    <p>Upstream sync is handled instead by a custom <code>.github/workflows/upstream-merge.yml</code> retargeted at <code>IBM/ibmi-mcp-server</code>, with a <code>merge=ours</code> git attribute on branded paths (package.json files, NOTICE, README intro) so future upstream merges don't clobber the rebrand.</p>
+    <div class="callout">
+      <strong>Why this matters:</strong> Both repos are Apache-2.0. The fork is a legitimate downstream — it complies with §4 of the license (attribution preserved in <code>NOTICE</code>, modifications listed in CHANGELOG, source available to anyone with a PAT). The hard-fork model is a packaging/branding decision, not a license maneuver.
+    </div>
+  </div>
+</section>
+
+<section id="commits">
+  <h2><span class="num">4</span>Every commit in the iA repo</h2>
+  <p>All 12 commits, oldest first. Each is a deliberate step in the "fork → rebrand → gate → ship" sequence:</p>
+  <div class="card">
+    <ul class="commits">
+      <li>
+        <span class="sha">7061ef6</span>
+        <span class="date">2026-05-15</span>
+        <span class="msg"><span class="tag initial">init</span>Initial Commit — clean snapshot of IBM/ibmi-mcp-server v0.5.1. Author: <em>khushi-pio</em>.</span>
+      </li>
+      <li>
+        <span class="sha">9d108e2</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag chore">chore</span>Phase 0 rebrand — fork as <code>@programmersio-ibmi/ia-mcp-server</code> (#1). Mechanical rename across 35 files: server &amp; CLI package scopes, Dockerfile workspace flags, release scripts, workflows. Adds NOTICE, retargets <code>upstream-merge.yml</code> at IBM/ibmi-mcp-server with a <code>merge=ours</code> driver.</span>
+      </li>
+      <li>
+        <span class="sha">ec97316</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag feat">feat</span>Phase 1 run-but-block license enforcement (#2). Adds <code>src/license/{check,middleware}.ts</code>, 25 unit tests, mock validator script, server wiring. <strong>+1,516 / −7 lines.</strong></span>
+      </li>
+      <li>
+        <span class="sha">28626a8</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag chore">chore</span>Run license tests locally, defer vitest to CI (#3) — AV blocked esbuild on the dev machine.</span>
+      </li>
+      <li>
+        <span class="sha">032aae1</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag chore">chore</span>Preserve hand-curated CHANGELOG, set 0.6.0 date (#4) — keeps upstream's narrative voice instead of letting standard-version overwrite it.</span>
+      </li>
+      <li>
+        <span class="sha">b7d1345</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag chore">chore</span>Release 0.6.0 — first cut under the new scope.</span>
+      </li>
+      <li>
+        <span class="sha">c088417</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag fix">fix</span>CI: exclude license tests from vitest, run via node:test in CI.</span>
+      </li>
+      <li>
+        <span class="sha">79790fe</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag fix">fix</span>CI: correct vitest exclude glob + bump CI Node to 22.x.</span>
+      </li>
+      <li>
+        <span class="sha">28ce824</span>
+        <span class="date">2026-05-24</span>
+        <span class="msg"><span class="tag fix">fix</span>CI: drop <code>--provenance</code> flag for private package publish (provenance is only for public-npm releases).</span>
+      </li>
+      <li>
+        <span class="sha">d0bfd03</span>
+        <span class="date">2026-05-25</span>
+        <span class="msg"><span class="tag fix">fix</span>Ship bundled YAML + <code>.env.example</code> in npm tarball (0.6.1) (#5). 0.6.0's <code>"files": ["dist"]</code> excluded both — customers had no template to bootstrap <code>.env</code> from. Adds <code>prepack</code> script that copies <code>tools/impact-analysis.yaml</code> into <code>packages/server/tools/</code>, exposes the YAML via package exports so <code>require.resolve()</code> works.</span>
+      </li>
+      <li>
+        <span class="sha">7fea066</span>
+        <span class="date">2026-05-25</span>
+        <span class="msg"><span class="tag chore">chore</span>Sync workspace versions to 0.6.1.</span>
+      </li>
+      <li>
+        <span class="sha">8e0e1e6</span>
+        <span class="date">2026-05-25</span>
+        <span class="msg"><span class="tag fix">fix</span>CI: exclude bundle tests from vitest run (they need <code>prepack</code> to have run first).</span>
+      </li>
+    </ul>
+  </div>
+  <div class="callout info">
+    <strong>Pattern:</strong> the only two "feature" commits are <code>9d108e2</code> (rebrand) and <code>ec97316</code> (license gate). Everything else is release plumbing — version bumps, CI fixes for the new publishing target, and the bundle-files patch that 0.6.0 needed to actually be installable.
+  </div>
+</section>
+
+<section id="diffmatrix">
+  <h2><span class="num">5</span>Difference matrix</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Aspect</th>
+        <th>IBM/ibmi-mcp-server</th>
+        <th>Programmersio-IBMi/ia-mcp-ibmi</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="aspect">Purpose</td>
+        <td class="ibm">Generic MCP server for IBM i, with example YAML toolsets and a tutorial.</td>
+        <td class="pio">Commercial productization of the same server, license-gated and pre-loaded with one specific tool catalog (Impact Analysis).</td>
+      </tr>
+      <tr>
+        <td class="aspect">npm package name</td>
+        <td class="ibm"><code>@ibm/ibmi-mcp-server</code><br><code>@ibm/ibmi-cli</code></td>
+        <td class="pio"><span class="badge changed">renamed</span><code>@programmersio-ibmi/ia-mcp-server</code><br><code>@programmersio-ibmi/ia-cli</code> (private)</td>
+      </tr>
+      <tr>
+        <td class="aspect">Version</td>
+        <td class="ibm">0.5.1</td>
+        <td class="pio">0.6.1 (fork bumped both 0.6.0 and 0.6.1 after branching)</td>
+      </tr>
+      <tr>
+        <td class="aspect">License model</td>
+        <td class="ibm">Apache-2.0, run-as-you-wish.</td>
+        <td class="pio"><span class="badge new">added</span>Apache-2.0 + <strong>runtime license gate</strong>. <code>IA_LICENSE_VALIDATOR_URL</code> is a required env var; server boots but blocks all MCP requests until the customer-hosted validator returns <code>true</code>.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Distribution channel</td>
+        <td class="ibm">Public <code>registry.npmjs.org</code>, no auth.</td>
+        <td class="pio"><span class="badge changed">changed</span>Private <code>npm.pkg.github.com</code>. Customers receive a read-only PAT (<code>read:packages</code> scope) and configure <code>.npmrc</code> under a dedicated <code>IAMCP</code> service account on IBM i.</td>
+      </tr>
+      <tr>
+        <td class="aspect"><code>tools/</code> directory</td>
+        <td class="ibm">5 example toolsets: <code>developer/</code>, <code>performance/</code>, <code>security/</code>, <code>sys-admin/</code>, <code>sample/</code> + a 53 KB tutorial README.</td>
+        <td class="pio"><span class="badge removed">removed examples</span><span class="badge new">added</span>Single bundled file: <code>impact-analysis.yaml</code> (104 KB, 49 read-only SQL tools).</td>
+      </tr>
+      <tr>
+        <td class="aspect">Startup behavior</td>
+        <td class="ibm">Loads YAML, opens Db2i connection, accepts MCP requests.</td>
+        <td class="pio"><span class="badge new">added</span>Same plus: license check before middleware mounts; Hono gate inserted as step 4 (before content-type / auth / rate-limit); <code>update-notifier</code> banner; logger wired into the license module.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Failure mode on license invalid</td>
+        <td class="ibm">N/A.</td>
+        <td class="pio">HTTP 403 with JSON-RPC envelope: <code>{"jsonrpc":"2.0","id":null,"error":{"code":-32001,"message":"iA license expired or unavailable. Contact Programmers.io to renew."}}</code>. Server stays running. <code>/healthz</code> stays open.</td>
+      </tr>
+      <tr>
+        <td class="aspect">License polling cadence</td>
+        <td class="ibm">N/A.</td>
+        <td class="pio">Adaptive: 1 h when valid, 5 min when blocked. 24 h last-good cache (file at <code>~/.cache/ia-license.json</code>) rides transient validator outages.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Files in npm tarball</td>
+        <td class="ibm"><code>dist/</code>.</td>
+        <td class="pio"><code>dist/</code> + <code>.env.example</code> + <code>tools/impact-analysis.yaml</code> (copied in by <code>prepack</code> script).</td>
+      </tr>
+      <tr>
+        <td class="aspect">CI provenance flag</td>
+        <td class="ibm"><code>--provenance public</code> for npm.</td>
+        <td class="pio">Removed (private GitHub Packages publish doesn't support it).</td>
+      </tr>
+      <tr>
+        <td class="aspect">Upstream sync</td>
+        <td class="ibm">Pulls from <code>cyanheads/mcp-ts-template</code>.</td>
+        <td class="pio">Pulls from <code>IBM/ibmi-mcp-server</code>, with <code>merge=ours</code> driver on branded paths via <code>.gitattributes</code>.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Attribution</td>
+        <td class="ibm">No NOTICE file.</td>
+        <td class="pio"><span class="badge new">added</span><code>NOTICE</code> (684 B) explicitly attributes the fork to IBM under Apache-2.0 §4 and lists Programmers.io modifications.</td>
+      </tr>
+      <tr>
+        <td class="aspect">README size</td>
+        <td class="ibm">14,670 B — generic tutorial.</td>
+        <td class="pio">18,267 B — adds Attribution paragraph and <em>Customer Setup</em> section (PAT, <code>.npmrc</code>, <code>IAMCP</code> service account, <code>SBMJOB</code> schedule, required <code>IA_LICENSE_VALIDATOR_URL</code>).</td>
+      </tr>
+      <tr>
+        <td class="aspect">CHANGELOG</td>
+        <td class="ibm">Auto-generated by <code>standard-version</code>.</td>
+        <td class="pio">Preserves all IBM entries (0.5.1 and earlier) unchanged; adds hand-curated 0.6.0 and 0.6.1 entries describing the fork.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Test runner</td>
+        <td class="ibm">vitest for everything.</td>
+        <td class="pio">vitest for the inherited tests; license + bundle tests run via Node's built-in <code>node:test</code> with <code>--experimental-strip-types</code> (vitest blocked locally by AV on esbuild).</td>
+      </tr>
+      <tr>
+        <td class="aspect">Activity</td>
+        <td class="ibm">Active Oct 2025 → Apr 2026; quiet since 2026-04-20.</td>
+        <td class="pio">12 commits May 15 → May 25, 2026 (10 days, then paused at v0.6.1).</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="license">
+  <h2><span class="num">6</span>License enforcement — the headline feature</h2>
+  <p>This is the only behavioral difference between the two servers. Everything else is packaging. The implementation is intentionally small and trust-based:</p>
+
+  <h3>Architecture</h3>
+  <ul>
+    <li><strong>Validator is customer-hosted.</strong> <code>IA_LICENSE_VALIDATOR_URL</code> points at an endpoint on the customer's iA installation (e.g. <code>http://&lt;ia-host&gt;:8080/iaTool/api/aiLicenseValidator</code>). No JWT, no signing — the validator returns the plain string <code>"true"</code> or <code>"false"</code>.</li>
+    <li><strong>Server boots regardless.</strong> <code>initializeLicenseGate()</code> runs once at startup; the result sets a module-level flag <code>_currentlyValid</code>. Even on <code>false</code>, the process stays alive and listens — only MCP requests are gated.</li>
+    <li><strong>Polling is adaptive.</strong> <code>setTimeout(tick, 1h)</code> when valid, <code>setTimeout(tick, 5min)</code> when blocked. State transitions are logged.</li>
+    <li><strong>Grace cache.</strong> If the validator is unreachable, the module falls back to a last-good result written to <code>~/.cache/ia-license.json</code>, but only if it's less than 24 h old.</li>
+    <li><strong>Hono middleware</strong> short-circuits with HTTP 403 and a JSON-RPC <code>-32001</code> error envelope when blocked. Mounted as step 4 in <code>httpTransport.ts</code> (before content-type / auth / rate-limit). <code>/healthz</code> is excluded so liveness probes still pass.</li>
+    <li><strong>Testable in isolation.</strong> The module uses dependency-injection seams (<code>setLicenseLogger</code>, <code>LicenseGateState</code>) so the 25 unit tests don't need to boot the full server.</li>
+  </ul>
+
+  <h3>Key code paths</h3>
+  <pre><code>// packages/server/src/license/check.ts (excerpt)
+const VALIDATOR_URL = process.env.IA_LICENSE_VALIDATOR_URL;
+if (!VALIDATOR_URL) {
+  throw new Error(
+    "IA_LICENSE_VALIDATOR_URL is required. Set it in .env, e.g., " +
+      "http://&lt;ia-host&gt;:8080/iaTool/api/aiLicenseValidator",
+  );
+}
+
+async function checkValidator(): Promise&lt;boolean | null&gt; {
+  try {
+    const resp = await fetch(VALIDATOR_URL!, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!resp.ok) return false;
+    return (await resp.text()).trim().toLowerCase() === "true";
+  } catch (err) {
+    log.error({ err }, "License validator unreachable");
+    return null;        // unreachable → fall back to cache
+  }
+}</code></pre>
+
+  <pre><code>// packages/server/src/license/middleware.ts (full)
+export function createLicenseGate(state: LicenseGateState): MiddlewareHandler {
+  return async function licenseGate(c: Context, next: Next) {
+    if (!state.isValid()) {
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32001, message: state.message() },
+        },
+        403,
+      );
+    }
+    await next();
+  };
+}</code></pre>
+
+  <div class="callout">
+    <strong>Design choice:</strong> Trust-based, run-but-block. The validator returns a boolean — there's no cryptographic proof. The author flags this explicitly in the file header. The intent is operational gating (a customer who stops paying loses access on the next 5-min poll), not theft prevention against a determined adversary who controls the network or the process.
+  </div>
+</section>
+
+<section id="tools">
+  <h2><span class="num">7</span>Bundled tools: examples vs Impact Analysis</h2>
+  <div class="grid-2">
+    <div class="repo-card ibm">
+      <h3>IBM <code>tools/</code> (~5 toolsets + tutorial)</h3>
+      <ul>
+        <li><code>developer/</code> — developer-focused SQL toolset examples</li>
+        <li><code>performance/</code> — system performance queries</li>
+        <li><code>security/</code> — authority &amp; security queries</li>
+        <li><code>sys-admin/</code> — sysadmin queries</li>
+        <li><code>sample/</code> — minimal "hello world" toolset</li>
+        <li><code>README.md</code> (53 KB) — written as a learn-by-example guide</li>
+      </ul>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;">Intent: teach the YAML tool definition pattern; let users pick what they need.</p>
+    </div>
+    <div class="repo-card pio">
+      <h3>iA <code>tools/</code> (one file)</h3>
+      <ul>
+        <li><code>impact-analysis.yaml</code> (104 KB) — 49 read-only SQL tools targeting the iA repository tables produced by programmers.io's IBM i source parser. Coverage:
+          <ul>
+            <li>where-used</li>
+            <li>call hierarchy</li>
+            <li>field impact</li>
+            <li>file dependencies (SQL-kind bifurcation)</li>
+            <li>file constraints (DB + select/omit)</li>
+            <li>REFFLD consumer lookup</li>
+            <li>program internals</li>
+            <li>source tokens</li>
+            <li>RPG source code</li>
+            <li>lifecycle / complexity / copybook impact / procedure analysis</li>
+            <li>batch job detection, member lookup, object size/usage</li>
+            <li>repository inventory</li>
+          </ul>
+        </li>
+      </ul>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;">Intent: ship a ready-to-run product against the iA schema; no IBM example noise.</p>
+    </div>
+  </div>
+
+  <p>The 0.6.1 patch (<code>d0bfd03</code>) discovered that the published 0.6.0 tarball didn't actually contain this YAML — <code>"files": ["dist"]</code> excluded it. The fix adds a <code>prepack</code> script (<code>scripts/bundle-files.ts</code>) that copies <code>tools/impact-analysis.yaml</code> from the monorepo root into <code>packages/server/tools/</code> before <code>npm publish</code>, then exposes it via <code>package.json</code> <code>exports</code> so customers can resolve it with <code>require.resolve('@programmersio-ibmi/ia-mcp-server/tools/impact-analysis.yaml')</code>.</p>
+</section>
+
+<section id="distribution">
+  <h2><span class="num">8</span>Distribution &amp; release pipeline</h2>
+  <table>
+    <thead>
+      <tr><th>Step</th><th>IBM</th><th>iA</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="aspect">Registry</td>
+        <td><code>registry.npmjs.org</code></td>
+        <td><code>npm.pkg.github.com</code> (GitHub Packages, private)</td>
+      </tr>
+      <tr>
+        <td class="aspect">Auth</td>
+        <td><code>NPM_TOKEN</code> secret in CI; public access for clients.</td>
+        <td><code>GITHUB_TOKEN</code> in CI; customer PAT (<code>read:packages</code>) on the client.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Provenance</td>
+        <td><code>--provenance public</code> passed to <code>npm publish</code>.</td>
+        <td>Dropped — GitHub Packages private publishes don't accept it.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Packages published</td>
+        <td>Server + CLI (both <code>@ibm/*</code>, both public).</td>
+        <td>Server only. CLI is marked <code>"private": true</code> and stays in the monorepo to minimize merge friction with upstream.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Idempotency</td>
+        <td>Skip <code>npm publish</code> if version already exists (added in 0.5.1).</td>
+        <td>Inherited.</td>
+      </tr>
+      <tr>
+        <td class="aspect">Customer install</td>
+        <td><code>npm i -g @ibm/ibmi-mcp-server</code></td>
+        <td>Configure <code>.npmrc</code> with PAT → <code>npm i -g @programmersio-ibmi/ia-mcp-server</code> → set <code>IA_LICENSE_VALIDATOR_URL</code> in <code>.env</code> → <code>SBMJOB</code> the server under the <code>IAMCP</code> service account on IBM i.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="filetree">
+  <h2><span class="num">9</span>File-tree differences</h2>
+  <p>Top-level layout is virtually identical (both inherit the IBM monorepo). The interesting deltas:</p>
+  <div class="filetree">
+ibmi-mcp-server/                     ia-mcp-ibmi/
+├── .bob/                             ├── .bob/
+├── .dockerignore                     ├── .dockerignore
+├── .env.example                      ├── .env.example         <span class="changed">// +IA_LICENSE_VALIDATOR_URL block</span>
+├── .gitattributes (499 B)            ├── .gitattributes (1075 B) <span class="changed">// +merge=ours rules</span>
+├── .github/                          ├── .github/
+│   └── workflows/                    │   └── workflows/
+│       ├── docker-multiplatform.yml  │       ├── docker-multiplatform.yml
+│       ├── publish.yml (3366 B)      │       ├── publish.yml (3428 B) <span class="changed">// retarget GH Packages</span>
+│       └── upstream-merge.yml (3598) │       └── upstream-merge.yml (4076) <span class="changed">// retarget IBM, merge=ours</span>
+├── CHANGELOG.md (26 KB)              ├── CHANGELOG.md (28.7 KB) <span class="added">// + 0.6.0, 0.6.1 entries</span>
+├── LICENSE                           ├── LICENSE
+│                                     ├── <span class="added">NOTICE (684 B)              // Apache-2.0 §4 attribution</span>
+├── README.md (14.7 KB)               ├── README.md (18.3 KB)   <span class="changed">// + Attribution + Customer Setup</span>
+├── packages/
+│   ├── cli/                          │   ├── cli/             <span class="changed">// renamed to @programmersio-ibmi/ia-cli, private</span>
+│   └── server/
+│       ├── src/
+│       │   ├── ...                   │       │   ├── ...
+│       │   ├── index.ts              │       │   ├── index.ts <span class="changed">// + license boot + update-notifier</span>
+│       │   └── mcp-server/
+│       │       └── transports/http/
+│       │           └── httpTransport.ts <span class="changed">// + license gate at step 4</span>
+│                                     │       │   └── <span class="added">license/                 // NEW</span>
+│                                     │       │       ├── <span class="added">check.ts (5.2 KB)</span>
+│                                     │       │       └── <span class="added">middleware.ts (1.1 KB)</span>
+│       ├── scripts/                  │       ├── scripts/
+│                                     │       │   ├── <span class="added">bundle-files.ts          // prepack</span>
+│                                     │       │   └── <span class="added">mock-license-validator.mjs</span>
+│       └── tests/                    │       └── tests/
+│                                     │           ├── <span class="added">license/                 // NEW (25 tests)</span>
+│                                     │           │   ├── check.test.ts (298 lines)
+│                                     │           │   └── middleware.test.ts (118 lines)
+│                                     │           └── <span class="added">bundle/bundleFiles.test.ts</span>
+└── tools/                            └── tools/
+    ├── README.md (53 KB)                 └── <span class="added">impact-analysis.yaml (104 KB)</span>
+    ├── developer/                        <span class="removed">// removed</span>
+    ├── performance/                      <span class="removed">// removed</span>
+    ├── sample/                           <span class="removed">// removed</span>
+    ├── security/                         <span class="removed">// removed</span>
+    └── sys-admin/                        <span class="removed">// removed</span>
+  </div>
+</section>
+
+<section id="takeaways">
+  <h2><span class="num">10</span>Bottom line</h2>
+  <div class="card">
+    <p><strong>IBM/ibmi-mcp-server</strong> is the platform: an open-source, generic MCP server with example toolsets and a tutorial, intended to be configurable by anyone with an IBM i and a YAML editor.</p>
+    <p><strong>Programmersio-IBMi/ia-mcp-ibmi</strong> is the product: the same platform, narrowed to one tool catalog (the iA SQL tools), gated by a license check the upstream doesn't have, and shipped through a private channel keyed to per-customer PATs. Future upstream improvements flow in through a <code>merge=ours</code>-protected sync workflow; future product work happens on top of the license module and the bundled YAML.</p>
+    <p>The fork's twelve commits map cleanly to that intent: one to copy, one to rename, one to gate, one to bundle, and eight to keep the release pipeline honest.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Compiled from GitHub API metadata, commit diffs, and source-file reads. IBM/ibmi-mcp-server HEAD <code>9a774d2</code> · ia-mcp-ibmi HEAD <code>8e0e1e6</code>.
+</footer>
+
+</body>
+</html>
