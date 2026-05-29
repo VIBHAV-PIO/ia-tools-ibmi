@@ -48,6 +48,7 @@
 | `ia_file_fields` | Field-level metadata: names, aliases, types, lengths, key sequence, reference chain |
 | `ia_field_reffld_consumers` | Inverse of `ia_file_fields`: only the fields **referenced as REFFLD by other files**, with consumer file/field/type info (use this for "which fields in CUSTMST are reused as templates?") |
 | `ia_file_dependencies` | LFs, indexes, views dependent on a physical file. Bifurcated by SQL kind (`SQL_OBJECT_TYPE` = INDEX/VIEW/TABLE/MQT/DDS_LF). Use `dependent_kind` to filter. |
+| `ia_join_logical_files` | Join logical files and their join structure: which physical files each join LF combines and the join field pairs. Pass `file_name` to find join LFs over a specific file (returns the full join), or `*ALL` to list all. |
 | `ia_file_constraints` | DB constraints (PK/UQ/FK/CHK) + LF select/omit rules in one call. Use `kind` to narrow (SELECT_OMIT, FOREIGN_KEY, etc.) |
 | `ia_file_overrides` | OVRDBF statements — real file routing vs. declared F-spec |
 | `ia_override_chain` | Chained OVRDBF dependencies (A→B→C) |

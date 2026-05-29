@@ -9,6 +9,20 @@ iA by [programmers.io](https://programmers.io/ia/) pre-parses IBM i source (RPG,
 
 **Goal:** Answer most questions in 1-2 tool calls. Consult [quick-reference.md](references/quick-reference.md) for tool selection, [tool-catalog.md](references/tool-catalog.md) for the full 50-tool list.
 
+## Rule Zero — Always Query iA, Never the Workspace
+
+Never search the local workspace or filesystem for IBM i members, objects, or source. The programs you are asked about do **not** live in the editor's files — they live in the iA repository. For any "show me / find / specs for `<member>`" request, resolve through the `ia_*` tools (`ia_member_lookup` / `ia_object_lookup`, then `ia_rpg_source` / `ia_cl_source`). Do not grep the workspace and do not report "not found" until iA itself returns nothing.
+
+## Routing Pitfalls (pick the right tool the first time)
+
+| Ask | Use | Not |
+|-----|-----|-----|
+| Calculation / F / D specs for member X | `ia_rpg_source(member_name=X, source_spec=C/F/D)` | workspace search; `ia_program_files` |
+| File declarations (F-specs) in X | `ia_rpg_source(member_name=X, source_spec='F')` | `ia_program_files` — that's the resolved file-access map, not source lines |
+| Find a BIF like `%CHECK` / `%SCAN` | `ia_rpg_source_search(search_text='%CHECK')` — pass the literal `%`; it now matches the BIF exactly | `ia_find_object_usages` (object cross-ref, not source text) |
+| Join logical files over file X | `ia_join_logical_files(file_name=X)` | `ia_file_dependencies` — lists dependents but not the join structure |
+| Lifecycle / when modified for X (library unknown) | `ia_object_lifecycle(object_name=X)` — library & type are optional | passing the iA repo library as the object library |
+
 ## Top 10 Tools (80% of Queries)
 
 | Tool | Use Case |

@@ -20,7 +20,7 @@ Use them with **VS Code GitHub Copilot**, **Claude Code**, or any MCP-compatible
 
 A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to query all 35+ iA tables. Invoke with `/ia` in any Claude Code session. The skill includes table schemas, SQL patterns, and query workflows in its `references/` folder.
 
-## Tools (49 custom + 2 built-in)
+## Tools (50 custom + 2 built-in)
 
 ### Custom iA Tools (defined in `impact-analysis.yaml`)
 
@@ -80,6 +80,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 47 | `ia_field_reffld_consumers` | Inverse of `ia_file_fields`: returns only the fields in a base file that are referenced as REFFLD templates by other files, with consumer file/field/type/length info |
 | 48 | `ia_file_constraints` | DB constraints (PK/UQ/FK/CHK from IDSPFDCST) and LF select/omit rules (from IDSPFDSLOM) in one call, with decoded delete/update rules and parent file links |
 | 49 | `ia_cl_source` | Read CL/CLLE/CLP source code line by line (queries IAQCLSRC); supports offset/limit pagination for sources >10000 lines |
+| 50 | `ia_join_logical_files` | List join logical files and their join structure (joined physical files + join field pairs) from IDSPFDJOIN; pass a physical file to find join LFs over it, or `*ALL` to list all |
 
 ### Built-in MCP Server Tools
 
@@ -167,13 +168,13 @@ IBM i MCP Server listening on http://localhost:3010
 code .
 ```
 
-VS Code detects `.vscode/mcp.json` and connects to the running MCP server at `http://localhost:3010/mcp`. The 49 iA tools plus built-in SQL tools become available in Copilot Chat.
+VS Code detects `.vscode/mcp.json` and connects to the running MCP server at `http://localhost:3010/mcp`. The 50 iA tools plus built-in SQL tools become available in Copilot Chat.
 
 ### Step 5: Use iA tools in Copilot Chat
 
 1. **Open Copilot Chat**: Press `Ctrl+Alt+I` (Windows/Linux) or `Cmd+Alt+I` (Mac)
 2. **Switch to Agent mode**: Click the mode dropdown at the top of the chat panel and select **"Agent"**
-3. **Verify tools are loaded**: Click the **tools icon** (wrench/hammer) at the top-left of the chat input — you should see the 49 `ia-*` tools plus `execute_sql` and `describe_sql_object` listed under "ibmi-ia-tools"
+3. **Verify tools are loaded**: Click the **tools icon** (wrench/hammer) at the top-left of the chat input — you should see the 50 `ia-*` tools plus `execute_sql` and `describe_sql_object` listed under "ibmi-ia-tools"
 4. **Ask a question** — the agent will automatically pick the right iA tool:
 
 ```
@@ -271,6 +272,7 @@ These tools query the following iA repository tables (pre-parsed IBM i source me
 | `IAOBJECT` | Object lifecycle (create/change/last-used dates) |
 | `IASRCMBRID` | Source member metadata (file, library, type, line counts) |
 | `IADSPDBR` | DSPDBR output (logical file/index/view dependencies) |
+| `IDSPFDJOIN` | DSPFD TYPE(*JOIN) output: join logical files, joined physical files, and join field pairs |
 | `IAEXCPLOG` | iA parser exception log |
 | `OBJECT_DETAILS` | Object inventory (type, library, source) |
 | `IA_DASHBOARD_DETAIL` | Member categories, line counts, library map |

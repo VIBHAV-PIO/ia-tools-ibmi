@@ -57,6 +57,7 @@ body:
         - ia_field_reffld_consumers
         - ia_file_constraints
         - ia_cl_source
+        - ia_join_logical_files
         - execute_sql
         - describe_sql_object
         - Other (specify below)

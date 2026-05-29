@@ -1,5 +1,7 @@
 # iA Quick Reference — Tool Selection
 
+> **Rule Zero:** Never search the local workspace/filesystem for IBM i members or source — always resolve through `ia_*` tools. See [SKILL.md → Routing Pitfalls](../SKILL.md) for the common wrong-tool traps (F-specs, BIF search, join LFs, lifecycle).
+
 ## Top 10 Tools (80% of Queries)
 
 | Tool | Use Case |
@@ -69,9 +71,12 @@
 | Raw RPG/CL token stream? | `ia_rpg_source_tokens`, `ia_cl_source_tokens` |
 | Source code for member X (RPG)? | `ia_rpg_source` |
 | Source code for member X (CL)? | `ia_cl_source` |
+| F-specs / D-specs / source declarations in X? | `ia_rpg_source(source_spec='F'/'D')` |
 | Search RPG source for keyword? | `ia_rpg_source_search` |
+| Find a BIF / `%keyword` (e.g. `%CHECK`) in source? | `ia_rpg_source_search` (pass the literal `%`) |
 | Modernization / format stats? | `ia_rpg_source_stats` |
 | Logical files over physical file X? | `ia_file_dependencies` |
+| Join logical files over file X (+ join fields)? | `ia_join_logical_files` |
 | Copybook change impact? | `ia_copybook_impact` |
 | Copybooks used by member X? | `ia_member_copybooks` |
 | SRVPGM exports/imports? | `ia_srvpgm_exports` |
