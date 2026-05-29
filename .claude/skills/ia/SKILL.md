@@ -13,6 +13,14 @@ iA by [programmers.io](https://programmers.io/ia/) pre-parses IBM i source (RPG,
 
 Never search the local workspace or filesystem for IBM i members, objects, or source. The programs you are asked about do **not** live in the editor's files — they live in the iA repository. For any "show me / find / specs for `<member>`" request, resolve through the `ia_*` tools (`ia_member_lookup` / `ia_object_lookup`, then `ia_rpg_source` / `ia_cl_source`). Do not grep the workspace and do not report "not found" until iA itself returns nothing.
 
+## Rule One — Always UPPERCASE Object/Member/File Names
+
+IBM i stores every object, member, file, field, program, and procedure name in **UPPERCASE**. Always upper-case names before calling any `ia_*` tool, no matter how the user typed them (`iAdepRpt` → `IADEPRPT`, `custmast` → `CUSTMAST`). The tools now also upper-case name parameters in SQL as a safety net, but normalize on your side too — a lower/mixed-case name that slips through matches nothing.
+
+## Rule Two — Empty Means Not Found; Never Substitute
+
+If a tool returns zero rows for a name you passed, the object/file/field **does not exist** in the repository (under that name). Report the negative plainly ("`ITMMAST` / `ITEMNO` was not found"). Do **not** silently swap in a similarly-named file and present its results as if they answered the question — that produces the wrong analysis. If you suspect a typo, use `ia_object_lookup`/`ia_member_lookup` with `%` wildcards to suggest close matches, and let the user confirm.
+
 ## Routing Pitfalls (pick the right tool the first time)
 
 | Ask | Use | Not |
@@ -22,6 +30,8 @@ Never search the local workspace or filesystem for IBM i members, objects, or so
 | Find a BIF like `%CHECK` / `%SCAN` | `ia_rpg_source_search(search_text='%CHECK')` — pass the literal `%`; it now matches the BIF exactly | `ia_find_object_usages` (object cross-ref, not source text) |
 | Join logical files over file X | `ia_join_logical_files(file_name=X)` | `ia_file_dependencies` — lists dependents but not the join structure |
 | Lifecycle / when modified for X (library unknown) | `ia_object_lifecycle(object_name=X)` — library & type are optional | passing the iA repo library as the object library |
+| List **all** display files in the repo | `ia_object_list(object_type='*FILE', object_attribute='DSPF')` | `ia_find_object_usages` — it's where-used for ONE object, not an inventory; there is no `*DSPF` type |
+| Every program a menu launches (e.g. CASEMNU) | `ia_call_hierarchy(program_name=MENU, direction='CALLEES')` — now follows `*MENU`→`*PGM` | assuming menus aren't tracked |
 
 ## Top 10 Tools (80% of Queries)
 
@@ -52,7 +62,7 @@ Never search the local workspace or filesystem for IBM i members, objects, or so
 
 ### Field Impact Analysis (3-4 calls, synthesize into one response)
 
-1. `ia_file_field_impact_analysis(file_name=X, field_name=Y)` → Direct PF references
+1. `ia_file_field_impact_analysis(file_name=X, field_name=Y)` → Direct PF references. **If this returns empty, the file/field doesn't exist — say so (Rule Two), don't analyze a different file.**
 2. `ia_file_dependencies(file_name=X)` → LFs/indexes/views over PF
 3. `ia_find_object_usages` on every STRUCTURAL `*FILE` from step 1 (parallel)
 4. `ia_find_object_usages(object_name=<each_LF>)` from step 2 (parallel)
@@ -67,8 +77,8 @@ Present as four sections: **Direct (NEEDS_CHANGE)**, **Direct (NEEDS_RECOMPILE)*
 
 ## Parameter Rules
 
-- Object/member names: **10-char uppercase** (`'CUSTMAST'`)
-- `object_type`: Star-prefixed (`*PGM`, `*SRVPGM`, `*FILE`, `*DSPF`)
+- Object/member/file/field names: **uppercase** (`'CUSTMAST'`) — see Rule One
+- `object_type`: Star-prefixed (`*PGM`, `*SRVPGM`, `*FILE`, `*CMD`, `*MENU`). **Display files are `*FILE` + attribute `DSPF`** — there is no `*DSPF` object type
 - Wildcard `*ALL` = no filter (default for optional params)
 - Only `ia_object_lookup` supports `%` wildcards in names
 
@@ -77,8 +87,8 @@ Present as four sections: **Direct (NEEDS_CHANGE)**, **Direct (NEEDS_RECOMPILE)*
 | Value | Meaning |
 |-------|---------|
 | `*SRVPGM` in results | Amplifier — always check dependents |
-| `*DSPF` in results | User-facing screen — flag prominently |
-| Empty results | May be scheduler-invoked or external |
+| `DSPF` attribute on a `*FILE` row | User-facing display file — flag prominently (it is a `*FILE`, not a `*DSPF` type) |
+| Empty results | Object/file not found under that name (Rule Two), or scheduler-invoked / external |
 | `REFERENCE_SOURCE = O` | Detected from compiled object |
 | `REFERENCE_SOURCE = S` | Detected from source code |
 | `REFERENCE_USAGE = I` | Implicit (via binding directory) |

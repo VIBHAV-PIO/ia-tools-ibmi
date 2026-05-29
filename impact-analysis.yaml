@@ -31,8 +31,13 @@ tools:
       Find every program, service program, command, display file, and logical file
       that references a specific object. Most common impact analysis query.
       Use before modifying or deleting any object to understand the blast radius.
-      Optionally filter by the type or library of the referenced object.
-      Queries the iA IAALLREFPF cross-reference table (richer than DSPPGMREF).
+      Optionally filter by the type or library of the referenced object. Display files
+      are *FILE objects (attribute DSPF) — there is no *DSPF object type here, so filter
+      with object_type=*FILE. This is a WHERE-USED tool for one object; to LIST every
+      display file in the repo use ia_object_list(object_type=*FILE,object_attribute=DSPF)
+      instead. The object name is upper-cased before matching, so lower/mixed-case input
+      (e.g. iAdepRpt) still resolves. Queries the iA IAALLREFPF cross-reference table
+      (richer than DSPPGMREF). Fixes #72, #76, #77.
     parameters:
       - name: object_name
         type: string
@@ -42,7 +47,7 @@ tools:
         maxLength: 10
       - name: object_type
         type: string
-        description: "Filter by referenced object type: *ALL, *PGM, *SRVPGM, *FILE, *DSPF, *CMD (default: *ALL)"
+        description: "Filter by referenced object type: *ALL, *PGM, *SRVPGM, *FILE, *CMD (default: *ALL). Display files are *FILE (no *DSPF type exists in the cross-reference) — pass *FILE to include them."
         required: false
         default: "*ALL"
       - name: referenced_library
@@ -71,7 +76,7 @@ tools:
         FILE_USAGES AS file_usage,
         MAPED_FROM AS reference_source
       FROM ${IA_LIBRARY}.IAALLREFPF
-      WHERE REFERENCED_OBJ = :object_name
+      WHERE REFERENCED_OBJ = UPPER(CAST(:object_name AS VARCHAR(256)))
         AND (:object_type = '*ALL' OR REFERENCED_OBJTYP = :object_type)
         AND (:referenced_library = '*ALL' OR REFERENCED_OBJLIB = :referenced_library)
       ORDER BY OBJECT_TYPE, OBJECT_NAME
@@ -93,7 +98,11 @@ tools:
       table produced it. For CALLERS direction, searches both CALLED_OBJCT
       (program-level calls) and CALLED_PROC (procedure-level calls) — use this to
       find callers of a procedure like IAEXCTIMR that is stored in CALLED_PROC
-      rather than CALLED_OBJCT. Fixes #61.
+      rather than CALLED_OBJCT. The IAALLREFPF branches no longer require the source
+      object to be a *PGM, so *MENU (and other container) callers/callees of a program
+      are surfaced — e.g. the programs a menu like CASEMNU launches. Object/member names
+      are upper-cased before matching, so lower/mixed-case input still resolves.
+      Fixes #61, #72, #73.
     parameters:
       - name: program_name
         type: string
@@ -127,7 +136,7 @@ tools:
         CAST(''             AS VARCHAR(10)) AS reference_source,
         CAST('IAPGMCALLS'   AS VARCHAR(15)) AS source_table
       FROM ${IA_LIBRARY}.IAPGMCALLS
-      WHERE MBR_NAME = :program_name
+      WHERE MBR_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND :direction IN ('CALLEES', 'BOTH')
       UNION ALL
       SELECT
@@ -143,7 +152,8 @@ tools:
         CAST(''             AS VARCHAR(10)) AS reference_source,
         CAST('IAPGMCALLS'   AS VARCHAR(15)) AS source_table
       FROM ${IA_LIBRARY}.IAPGMCALLS
-      WHERE (CALLED_OBJCT = :program_name OR CALLED_PROC = :program_name)
+      WHERE (CALLED_OBJCT = UPPER(CAST(:program_name AS VARCHAR(256)))
+             OR CALLED_PROC = UPPER(CAST(:program_name AS VARCHAR(256))))
         AND :direction IN ('CALLERS', 'BOTH')
       UNION ALL
       SELECT
@@ -159,8 +169,7 @@ tools:
         CAST(MAPED_FROM        AS VARCHAR(10)) AS reference_source,
         CAST('IAALLREFPF'      AS VARCHAR(15)) AS source_table
       FROM ${IA_LIBRARY}.IAALLREFPF
-      WHERE OBJECT_NAME = :program_name
-        AND OBJECT_TYPE = '*PGM'
+      WHERE OBJECT_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND REFERENCED_OBJTYP = '*PGM'
         AND :direction IN ('CALLEES', 'BOTH')
         AND NOT EXISTS (
@@ -182,8 +191,7 @@ tools:
         CAST(MAPED_FROM        AS VARCHAR(10)) AS reference_source,
         CAST('IAALLREFPF'      AS VARCHAR(15)) AS source_table
       FROM ${IA_LIBRARY}.IAALLREFPF
-      WHERE REFERENCED_OBJ = :program_name
-        AND OBJECT_TYPE = '*PGM'
+      WHERE REFERENCED_OBJ = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND REFERENCED_OBJTYP = '*PGM'
         AND :direction IN ('CALLERS', 'BOTH')
         AND NOT EXISTS (
@@ -254,21 +262,21 @@ tools:
         END AS impact_type
       FROM ${IA_LIBRARY}.IAALLREFPF ref
       LEFT JOIN ${IA_LIBRARY}.IAFILEDTL fld
-        ON fld.FILE_NAME = :file_name
-        AND fld.FIELD_NAME_INTERNAL = :field_name
+        ON fld.FILE_NAME = UPPER(CAST(:file_name AS VARCHAR(256)))
+        AND fld.FIELD_NAME_INTERNAL = UPPER(CAST(:field_name AS VARCHAR(256)))
       LEFT JOIN (
         SELECT DISTINCT MEMBER_NAME
         FROM ${IA_LIBRARY}.IAQRPGSRC
-        WHERE SOURCE_DATA LIKE '%' || :field_name || '%'
+        WHERE UPPER(SOURCE_DATA) LIKE '%' || UPPER(CAST(:field_name AS VARCHAR(256))) || '%'
       ) src_rpg ON src_rpg.MEMBER_NAME = ref.OBJECT_NAME
         AND ref.OBJECT_ATTR IN ('RPGLE', 'SQLRPGLE', 'RPG', 'RPG38', 'RPGII', 'RPGILE')
       LEFT JOIN (
         SELECT DISTINCT MEMBER_NAME
         FROM ${IA_LIBRARY}.IAQCLSRC
-        WHERE SOURCE_DATA LIKE '%' || :field_name || '%'
+        WHERE UPPER(SOURCE_DATA) LIKE '%' || UPPER(CAST(:field_name AS VARCHAR(256))) || '%'
       ) src_cl ON src_cl.MEMBER_NAME = ref.OBJECT_NAME
         AND ref.OBJECT_ATTR IN ('CLLE', 'CLE', 'CL', 'CL38')
-      WHERE ref.REFERENCED_OBJ = :file_name
+      WHERE ref.REFERENCED_OBJ = UPPER(CAST(:file_name AS VARCHAR(256)))
       ORDER BY impact_type, ref.OBJECT_TYPE, ref.OBJECT_NAME
       FETCH FIRST :limit ROWS ONLY
 
@@ -312,7 +320,7 @@ tools:
         IAV_DIM AS array_dimension,
         IAV_KWVAL AS constant_value
       FROM ${IA_LIBRARY}.IAPGMVARS
-      WHERE IAV_MBR = :member_name
+      WHERE IAV_MBR = UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR IAV_LIB = :library)
       ORDER BY IAV_LIB, IAV_VAR
       FETCH FIRST :limit ROWS ONLY
@@ -361,7 +369,7 @@ tools:
         DS_BASED_NAM AS based_on,
         DS_QUALFLG AS qualified_flag
       FROM ${IA_LIBRARY}.IAPGMDS
-      WHERE MEMBER_NAME = :member_name
+      WHERE MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR LIBRARY_NAME = :library)
       ORDER BY LIBRARY_NAME, DATASTR_NAME, DS_FLD_RANK
       FETCH FIRST :limit ROWS ONLY
@@ -406,7 +414,7 @@ tools:
         PARM_LENGTH AS parameter_length,
         CALL_SEQ AS call_sequence
       FROM ${IA_LIBRARY}.IACALLPARM
-      WHERE MBR_NAME = :member_name
+      WHERE MBR_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR MBR_LIB = :library)
       ORDER BY MBR_LIB, CALLED_OBJECT, CALL_SEQ
       FETCH FIRST :limit ROWS ONLY
@@ -449,7 +457,7 @@ tools:
         SR_CNT AS usage_count,
         MBR_RRN AS line_number
       FROM ${IA_LIBRARY}.IASUBRDTL
-      WHERE MBR_NAME = :member_name
+      WHERE MBR_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
         AND SR_OPCODE = 'BEGSR'
         AND (:library = '*ALL' OR MBR_LIB = :library)
       ORDER BY MBR_LIB, SR_SBR_NAME
@@ -505,7 +513,7 @@ tools:
         IOVR_DRRN AS dltovr_line_number,
         IOVR_DARRN AS dltovr_all_line_number
       FROM ${IA_LIBRARY}.IAOVRPF
-      WHERE (:member_name = '*ALL' OR IOVR_MBR = :member_name)
+      WHERE (:member_name = '*ALL' OR IOVR_MBR = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:library_name = '*ALL' OR IOVR_LIB = :library_name)
       ORDER BY IOVR_LIB, IOVR_MBR, IOVR_RRN
       FETCH FIRST :limit ROWS ONLY
@@ -552,7 +560,7 @@ tools:
         REF_RCDFMT AS reference_format,
         REF_FIELD AS reference_field
       FROM ${IA_LIBRARY}.IAFILEDTL
-      WHERE FILE_NAME = :file_name
+      WHERE FILE_NAME = UPPER(CAST(:file_name AS VARCHAR(256)))
       ORDER BY FIELD_NAME_INTERNAL
       FETCH FIRST :limit ROWS ONLY
 
@@ -567,11 +575,13 @@ tools:
       source file/member, creation date, and exclusion status.
       Use to discover available objects before running impact analysis.
       Optionally filter by library to scope results to a single library.
-      Queries OBJECT_DETAILS — the master object inventory.
+      To list every display file, filter object_type=*FILE with object_attribute=DSPF
+      (display files are *FILE objects with the DSPF attribute — there is no *DSPF type).
+      Queries OBJECT_DETAILS — the master object inventory. Fixes #76.
     parameters:
       - name: object_type
         type: string
-        description: "Filter: *ALL, *PGM, *SRVPGM, *FILE, *DSPF, *CMD, *DTAARA, *MODULE (default: *ALL)"
+        description: "Filter: *ALL, *PGM, *SRVPGM, *FILE, *CMD, *DTAARA, *MODULE (default: *ALL). Display files are *FILE + object_attribute=DSPF, not a separate *DSPF type."
         required: false
         default: "*ALL"
       - name: object_attribute
@@ -663,7 +673,8 @@ tools:
         ON c.MEMBER_NAME = i.SRC_MBR
       LEFT JOIN ${IA_LIBRARY}.IASRCMBRID m
         ON m.MEMBER_NAME = i.SRC_MBR
-      WHERE (i.PGM_NAME = :program_name OR i.MOD_NAME = :program_name)
+      WHERE (i.PGM_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
+             OR i.MOD_NAME = UPPER(CAST(:program_name AS VARCHAR(256))))
         AND (:library = '*ALL' OR i.PGM_LIB = :library)
       ORDER BY i.MOD_TYP, i.MOD_NAME
       FETCH FIRST :limit ROWS ONLY
@@ -705,7 +716,7 @@ tools:
         CALLED_PROC AS detail_2,
         CAST(CALL_SEQ AS VARCHAR(50)) AS detail_3
       FROM ${IA_LIBRARY}.IAPGMCALLS
-      WHERE MBR_NAME = :program_name
+      WHERE MBR_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:section = '*ALL' OR :section = 'CALLS')
 
       UNION ALL
@@ -716,7 +727,7 @@ tools:
         MAPED_FROM AS detail_2,
         '' AS detail_3
       FROM ${IA_LIBRARY}.IAALLREFPF
-      WHERE OBJECT_NAME = :program_name
+      WHERE OBJECT_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND REFERENCED_OBJTYP = '*FILE'
         AND (:section = '*ALL' OR :section = 'FILES')
 
@@ -728,7 +739,7 @@ tools:
         CAST(SR_CNT AS VARCHAR(50)) AS detail_2,
         CAST(MBR_RRN AS VARCHAR(50)) AS detail_3
       FROM ${IA_LIBRARY}.IASUBRDTL
-      WHERE MBR_NAME = :program_name
+      WHERE MBR_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND SR_OPCODE = 'BEGSR'
         AND (:section = '*ALL' OR :section = 'SUBROUTINES')
 
@@ -740,7 +751,7 @@ tools:
         IAV_DTYP AS detail_2,
         CAST(IAV_LEN AS VARCHAR(50)) AS detail_3
       FROM ${IA_LIBRARY}.IAPGMVARS
-      WHERE IAV_MBR = :program_name
+      WHERE IAV_MBR = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:section = '*ALL' OR :section = 'VARIABLES')
 
       UNION ALL
@@ -751,7 +762,7 @@ tools:
         IOVR_SCP AS detail_2,
         CAST(IOVR_RRN AS VARCHAR(50)) AS detail_3
       FROM ${IA_LIBRARY}.IAOVRPF
-      WHERE IOVR_MBR = :program_name
+      WHERE IOVR_MBR = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:section = '*ALL' OR :section = 'OVERRIDES')
 
       UNION ALL
@@ -762,7 +773,7 @@ tools:
         PARM_TYPE AS detail_2,
         CAST(CALL_SEQ AS VARCHAR(50)) AS detail_3
       FROM ${IA_LIBRARY}.IACALLPARM
-      WHERE MBR_NAME = :program_name
+      WHERE MBR_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:section = '*ALL' OR :section = 'CALL_PARAMS')
 
       ORDER BY section, name
@@ -801,7 +812,7 @@ tools:
     statement: |
       SELECT *
       FROM ${IA_LIBRARY}.IAPGMREF
-      WHERE MEMBER_NAME = :member_name
+      WHERE MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
       ORDER BY SOURCE_RRN
       OFFSET :offset ROWS
       FETCH FIRST :limit ROWS ONLY
@@ -838,7 +849,7 @@ tools:
     statement: |
       SELECT *
       FROM ${IA_LIBRARY}.IACPGMREF
-      WHERE MEMBER_NAME = :member_name
+      WHERE MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
       ORDER BY SOURCE_RRN
       OFFSET :offset ROWS
       FETCH FIRST :limit ROWS ONLY
@@ -926,7 +937,7 @@ tools:
     statement: |
       SELECT *
       FROM ${IA_LIBRARY}.IAEXCPLOG
-      WHERE (:member_name = '*ALL' OR PRS_SOURCE_SRC_MBR = :member_name)
+      WHERE (:member_name = '*ALL' OR PRS_SOURCE_SRC_MBR = UPPER(CAST(:member_name AS VARCHAR(256))))
       FETCH FIRST :limit ROWS ONLY
 
   # ── 18. DDS to DDL Status — conversion tracking ──────────────────────────
@@ -983,7 +994,7 @@ tools:
         OBJECT_TYPE AS referencing_type,
         COUNT(*) AS reference_count
       FROM ${IA_LIBRARY}.IAALLREFPF
-      WHERE REFERENCED_OBJ = :object_name
+      WHERE REFERENCED_OBJ = UPPER(CAST(:object_name AS VARCHAR(256)))
       GROUP BY REFERENCED_OBJ, OBJECT_TYPE
       ORDER BY reference_count DESC
       FETCH FIRST :limit ROWS ONLY
@@ -1031,8 +1042,15 @@ tools:
     fetchAllRows: true
     maxDisplayRows: 1000
     description: >
-      Detect circular dependencies — programs that call each other directly
-      or indirectly. These create maintenance risks and can cause infinite loops.
+      Detect circular dependencies — programs that call each other (A→B→A, MUTUAL)
+      or call themselves (A→A, SELF recursion). Both create maintenance risks and can
+      cause infinite loops. Scans the parsed-call table IAPGMCALLS AND the broader
+      cross-reference table IAALLREFPF (*PGM↔*PGM edges), so cycles recorded only as
+      object references — e.g. dynamic CALLs, recursion detected from the compiled
+      object — are caught even when they never landed in IAPGMCALLS. The IAALLREFPF
+      side is restricted to OBJECT_TYPE='*PGM' so a *CMD pointing at its same-named
+      command-processing program is NOT reported as a false cycle. Each row carries
+      cycle_type (SELF/MUTUAL) and source_table (which table detected it). Fixes #74.
     parameters:
       - name: limit
         type: integer
@@ -1042,15 +1060,30 @@ tools:
         min: 1
         max: 5000
     statement: |
-      SELECT DISTINCT
-        a.MBR_NAME AS program_a,
-        a.CALLED_OBJCT AS program_b,
-        'CIRCULAR' AS dependency_type
-      FROM ${IA_LIBRARY}.IAPGMCALLS a
-      JOIN ${IA_LIBRARY}.IAPGMCALLS b
-        ON a.CALLED_OBJCT = b.MBR_NAME
-        AND b.CALLED_OBJCT = a.MBR_NAME
-      ORDER BY program_a
+      SELECT DISTINCT program_a, program_b, cycle_type, source_table FROM (
+        SELECT
+          a.MBR_NAME AS program_a,
+          a.CALLED_OBJCT AS program_b,
+          CASE WHEN a.MBR_NAME = a.CALLED_OBJCT THEN 'SELF' ELSE 'MUTUAL' END AS cycle_type,
+          'IAPGMCALLS' AS source_table
+        FROM ${IA_LIBRARY}.IAPGMCALLS a
+        JOIN ${IA_LIBRARY}.IAPGMCALLS b
+          ON a.CALLED_OBJCT = b.MBR_NAME
+          AND b.CALLED_OBJCT = a.MBR_NAME
+        UNION
+        SELECT
+          a.OBJECT_NAME AS program_a,
+          a.REFERENCED_OBJ AS program_b,
+          CASE WHEN a.OBJECT_NAME = a.REFERENCED_OBJ THEN 'SELF' ELSE 'MUTUAL' END AS cycle_type,
+          'IAALLREFPF' AS source_table
+        FROM ${IA_LIBRARY}.IAALLREFPF a
+        JOIN ${IA_LIBRARY}.IAALLREFPF b
+          ON a.REFERENCED_OBJ = b.OBJECT_NAME
+          AND b.REFERENCED_OBJ = a.OBJECT_NAME
+        WHERE a.OBJECT_TYPE = '*PGM' AND a.REFERENCED_OBJTYP = '*PGM'
+          AND b.OBJECT_TYPE = '*PGM' AND b.REFERENCED_OBJTYP = '*PGM'
+      ) t
+      ORDER BY cycle_type, program_a, program_b
       FETCH FIRST :limit ROWS ONLY
 
   # ── 22. Override Chain — chained OVRDBF dependencies ─────────────────────
@@ -1139,7 +1172,7 @@ tools:
         DAYS_USED_COUNT AS days_used,
         OBJECT_TEXT
       FROM ${IA_LIBRARY}.IAOBJECT
-      WHERE OBJECT_NAME = :object_name
+      WHERE OBJECT_NAME = UPPER(CAST(:object_name AS VARCHAR(256)))
         AND (:object_library = '*ALL' OR OBJECT_LIBRARY = :object_library)
         AND (:object_type = '*ALL' OR OBJECT_TYPE = :object_type)
       ORDER BY OBJECT_LIBRARY, OBJECT_TYPE, OBJECT_NAME
@@ -1206,7 +1239,7 @@ tools:
         CALLED_BY_PGM AS called_by_count,
         ALL_COUNT AS total_operations
       FROM ${IA_LIBRARY}.IA_CODE_INFO
-      WHERE (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
+      WHERE (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:library = '*ALL' OR LIBRARY_NAME = :library)
       ORDER BY LIBRARY_NAME, TOTAL_LINES DESC
       FETCH FIRST :limit ROWS ONLY
@@ -1285,7 +1318,7 @@ tools:
     statement: |
       SELECT *
       FROM ${IA_LIBRARY}.IAOBJMAP
-      WHERE RTRIM(OBJECT_NAME) LIKE :object_name
+      WHERE RTRIM(OBJECT_NAME) LIKE UPPER(CAST(:object_name AS VARCHAR(256)))
       ORDER BY OBJECT_NAME, OBJECT_TYPE
       FETCH FIRST :limit ROWS ONLY
 
@@ -1363,7 +1396,7 @@ tools:
       FROM ${IA_LIBRARY}.IADSPDBR d
       LEFT JOIN ${IA_LIBRARY}.IDSPFDBASA a
         ON a.ATFILE = d.WHREFI
-      WHERE d.WHRFI = :file_name
+      WHERE d.WHRFI = UPPER(CAST(:file_name AS VARCHAR(256)))
         AND (
           :dependent_kind = '*ALL'
           OR (:dependent_kind = 'INDEX' AND a.ATSQLT = 'I')
@@ -1460,7 +1493,7 @@ tools:
         COPYBOOK_SOURCE_FILE AS copybook_source_file,
         COPYBOOK_DIRECTIVES AS directive
       FROM ${IA_LIBRARY}.COPYBOOK_MEMBER_DETAIL
-      WHERE COPYBOOK_MEMBER_NAME = :copybook_name
+      WHERE COPYBOOK_MEMBER_NAME = UPPER(CAST(:copybook_name AS VARCHAR(256)))
         AND (:member_type = '*ALL' OR MEMBER_TYPE = :member_type)
       ORDER BY MEMBER_LIBRARY, MEMBER_NAME
       FETCH FIRST :limit ROWS ONLY
@@ -1504,7 +1537,7 @@ tools:
         PROCEDURE_NAME,
         PROCEDURE_TYPE
       FROM ${IA_LIBRARY}.IMPORTED_EXPORTED_PROCEDURE_DETAILS
-      WHERE OBJECT_NAME = :object_name
+      WHERE OBJECT_NAME = UPPER(CAST(:object_name AS VARCHAR(256)))
         AND (:procedure_type = '*ALL' OR PROCEDURE_TYPE = :procedure_type)
       ORDER BY PROCEDURE_TYPE, PROCEDURE_NAME
       FETCH FIRST :limit ROWS ONLY
@@ -1550,7 +1583,7 @@ tools:
         REFERENCED_OBJECT_NAME AS target_object,
         REFERENCED_PROCEDURE_NAME AS target_procedure
       FROM ${IA_LIBRARY}.PROCEDURE_REFERENCE_DETAIL
-      WHERE RTRIM(REFERENCED_PROCEDURE_NAME) LIKE :procedure_name
+      WHERE RTRIM(REFERENCED_PROCEDURE_NAME) LIKE UPPER(CAST(:procedure_name AS VARCHAR(256)))
         AND :direction IN ('CALLERS', 'BOTH')
       UNION ALL
       SELECT
@@ -1562,7 +1595,7 @@ tools:
         REFERENCED_OBJECT_NAME AS target_object,
         REFERENCED_PROCEDURE_NAME AS target_procedure
       FROM ${IA_LIBRARY}.PROCEDURE_REFERENCE_DETAIL
-      WHERE RTRIM(PROCEDURE_NAME) LIKE :procedure_name
+      WHERE RTRIM(PROCEDURE_NAME) LIKE UPPER(CAST(:procedure_name AS VARCHAR(256)))
         AND :direction IN ('CALLEES', 'BOTH')
       ORDER BY direction, caller_object
       FETCH FIRST :limit ROWS ONLY
@@ -1610,7 +1643,7 @@ tools:
         IVCAL_JOBQ AS job_queue,
         IVCAL_HOLD AS hold_flag
       FROM ${IA_LIBRARY}.IAVARCAL
-      WHERE (:member_name = '*ALL' OR IVCAL_MBR = :member_name)
+      WHERE (:member_name = '*ALL' OR IVCAL_MBR = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:call_type = '*ALL' OR IVCAL_TYP = :call_type)
       ORDER BY IVCAL_MBR, IVCAL_TYP
       FETCH FIRST :limit ROWS ONLY
@@ -1663,8 +1696,8 @@ tools:
         PARM_DEC_POS AS decimal_positions,
         KEYWORDS
       FROM ${IA_LIBRARY}.IAPRCPARM
-      WHERE RTRIM(PROCEDURE_NAME) LIKE :procedure_name
-        AND (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
+      WHERE RTRIM(PROCEDURE_NAME) LIKE UPPER(CAST(:procedure_name AS VARCHAR(256)))
+        AND (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:library = '*ALL' OR LIBRARY_NAME = :library)
       ORDER BY LIBRARY_NAME, MEMBER_NAME, PR_PI_FLAG, PARAMETER_SEQ
       FETCH FIRST :limit ROWS ONLY
@@ -1719,11 +1752,11 @@ tools:
         RESULT_VAL AS result,
         BIF AS builtin_function
       FROM ${IA_LIBRARY}.IAVARREL
-      WHERE (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
+      WHERE (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:variable_name = '*ALL'
-             OR FACTOR1_VAL = :variable_name
-             OR FACTOR2_VAL = :variable_name
-             OR RESULT_VAL = :variable_name)
+             OR UPPER(FACTOR1_VAL) = UPPER(CAST(:variable_name AS VARCHAR(256)))
+             OR UPPER(FACTOR2_VAL) = UPPER(CAST(:variable_name AS VARCHAR(256)))
+             OR UPPER(RESULT_VAL) = UPPER(CAST(:variable_name AS VARCHAR(256))))
         AND (:opcode = '*ALL' OR OPCODE_NAME = :opcode)
         AND (:library = '*ALL' OR LIBRARY_NAME = :library)
       ORDER BY LIBRARY_NAME, MEMBER_NAME
@@ -1771,9 +1804,9 @@ tools:
         KLIST_NAME,
         KFLD_NAME AS key_field
       FROM ${IA_LIBRARY}.IAPGMKLIST
-      WHERE (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
-        AND (:klist_name = '*ALL' OR KLIST_NAME = :klist_name)
-        AND (:kfld_name = '*ALL' OR RTRIM(KFLD_NAME) LIKE :kfld_name)
+      WHERE (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
+        AND (:klist_name = '*ALL' OR KLIST_NAME = UPPER(CAST(:klist_name AS VARCHAR(256))))
+        AND (:kfld_name = '*ALL' OR RTRIM(KFLD_NAME) LIKE UPPER(CAST(:kfld_name AS VARCHAR(256))))
       ORDER BY MEMBER_NAME, KLIST_NAME
       FETCH FIRST :limit ROWS ONLY
 
@@ -1826,8 +1859,8 @@ tools:
       LEFT JOIN ${IA_LIBRARY}.APPLICATION_AREA_OBJECT_DETAILS d
         ON h.APP_AREA_NAME = d.APP_AREA_NAME
         AND (:area_name != '*LIST' OR :object_name != '*ALL')
-      WHERE (:area_name = '*LIST' OR h.APP_AREA_NAME = :area_name)
-        AND (:object_name = '*ALL' OR TRIM(d.OBJECT_NAME) LIKE :object_name)
+      WHERE (:area_name = '*LIST' OR h.APP_AREA_NAME = UPPER(CAST(:area_name AS VARCHAR(256))))
+        AND (:object_name = '*ALL' OR TRIM(d.OBJECT_NAME) LIKE UPPER(CAST(:object_name AS VARCHAR(256))))
         AND (:object_type = '*ALL' OR d.OBJECT_TYPE = :object_type OR d.OBJECT_TYPE IS NULL)
       ORDER BY h.APP_AREA_NAME, d.OBJECT_TYPE, d.OBJECT_NAME
       FETCH FIRST :limit ROWS ONLY
@@ -1875,9 +1908,9 @@ tools:
         SOURCE_MEMBER,
         SOURCE_FILE
       FROM ${IA_LIBRARY}.IA_LONG_SHORT_NAME
-      WHERE (ROUTINE_NAME LIKE :name_pattern
-             OR EXTERNAL_NAME LIKE :name_pattern
-             OR SOURCE_MEMBER LIKE :name_pattern)
+      WHERE (ROUTINE_NAME LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
+             OR EXTERNAL_NAME LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
+             OR SOURCE_MEMBER LIKE UPPER(CAST(:name_pattern AS VARCHAR(256))))
         AND (:routine_type = '*ALL' OR ROUTINE_TYPE = :routine_type)
       ORDER BY ROUTINE_NAME
       FETCH FIRST :limit ROWS ONLY
@@ -1931,7 +1964,7 @@ tools:
         FILEINFO_DATASTR AS file_info_ds,
         INDICATOR_DATASTR AS indicator_ds
       FROM ${IA_LIBRARY}.PROGRAM_TO_FILE_MAPPING_DETAILS
-      WHERE MEMBER_NAME = :member_name
+      WHERE MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR LIBRARY = :library)
       ORDER BY ACTUAL_FILE
       FETCH FIRST :limit ROWS ONLY
@@ -1986,7 +2019,7 @@ tools:
       SELECT
         SOURCE_RRN, SOURCE_DATA
       FROM ${IA_LIBRARY}.IAQRPGSRC
-      WHERE (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
+      WHERE (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:source_spec = '*ALL' OR SOURCE_SPEC = :source_spec)
         AND (:library_name = '*ALL' OR LIBRARY_NAME = :library_name)
       ORDER BY LIBRARY_NAME, MEMBER_NAME, SOURCE_RRN
@@ -2038,7 +2071,7 @@ tools:
         SOURCE_RRN, SOURCE_DATA
       FROM ${IA_LIBRARY}.IAQRPGSRC
       WHERE POSSTR(UPPER(SOURCE_DATA), UPPER(CAST(:search_text AS VARCHAR(1000)))) > 0
-        AND (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
+        AND (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:member_type = '*ALL' OR MEMBER_TYPE = :member_type)
       ORDER BY MEMBER_NAME, SOURCE_RRN
       FETCH FIRST :limit ROWS ONLY
@@ -2089,7 +2122,7 @@ tools:
           THEN DEC(SUM(CASE WHEN SRCLIN_TYPE LIKE 'FF%' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 5, 1)
           ELSE 0 END AS FREE_FORMAT_PCT
       FROM ${IA_LIBRARY}.IAQRPGSRC
-      WHERE (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
+      WHERE (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:library_name = '*ALL' OR LIBRARY_NAME = :library_name)
       GROUP BY MEMBER_NAME, LIBRARY_NAME, MEMBER_TYPE
       ORDER BY MEMBER_NAME, LIBRARY_NAME
@@ -2158,7 +2191,7 @@ tools:
         ON S.MEMBER_NAME = M.MEMBER_NAME
         AND S.MEMBER_LIB = M.SOURCE_LIBRARY
         AND S.MBR_SRC_PF = M.SOURCE_FILE
-      WHERE M.MEMBER_NAME LIKE :member_name
+      WHERE M.MEMBER_NAME LIKE UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:source_file = '*ALL' OR M.SOURCE_FILE = :source_file)
         AND (:source_library = '*ALL' OR M.SOURCE_LIBRARY = :source_library)
         AND (:member_type = '*ALL' OR RTRIM(M.MEMBER_TYPE) LIKE :member_type)
@@ -2214,7 +2247,7 @@ tools:
         FILE_USAGES AS file_usage,
         MAPED_FROM AS reference_source
       FROM ${IA_LIBRARY}.IAALLREFPF
-      WHERE OBJECT_NAME = :object_name
+      WHERE OBJECT_NAME = UPPER(CAST(:object_name AS VARCHAR(256)))
         AND (:object_type = '*ALL' OR OBJECT_TYPE = :object_type)
         AND (:referenced_type = '*ALL' OR REFERENCED_OBJTYP = :referenced_type)
       ORDER BY REFERENCED_OBJTYP, REFERENCED_OBJ
@@ -2262,7 +2295,7 @@ tools:
         RTRIM(MEMBER_LIBRARY) AS member_library,
         RTRIM(MEMBER_TYPE) AS member_type
       FROM ${IA_LIBRARY}.COPYBOOK_MEMBER_DETAIL
-      WHERE MEMBER_NAME = :member_name
+      WHERE MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:member_library = '*ALL' OR MEMBER_LIBRARY = :member_library)
       ORDER BY MEMBER_RRN_NUMBER
       FETCH FIRST :limit ROWS ONLY
@@ -2334,7 +2367,7 @@ tools:
         DAYS_USED_COUNT,
         OBJECT_USAGE_CATEGORY
       FROM ${IA_LIBRARY}.IAOBJUSGDP
-      WHERE (:object_name    = '*ALL' OR OBJECT_NAME    = :object_name)
+      WHERE (:object_name    = '*ALL' OR OBJECT_NAME    = UPPER(CAST(:object_name AS VARCHAR(256))))
         AND (:object_library = '*ALL' OR OBJECT_LIBRARY = :object_library)
         AND (:object_type    = '*ALL' OR OBJECT_TYPE    = :object_type)
         AND (:usage_category = '*ALL' OR OBJECT_USAGE_CATEGORY = :usage_category)
@@ -2394,7 +2427,7 @@ tools:
         ON S.MEMBER_NAME = M.MEMBER_NAME
         AND S.MEMBER_LIB = M.SOURCE_LIBRARY
         AND S.MBR_SRC_PF = M.SOURCE_FILE
-      WHERE M.MEMBER_NAME = :program_name
+      WHERE M.MEMBER_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR M.SOURCE_LIBRARY = :library)
 
       UNION ALL
@@ -2419,7 +2452,7 @@ tools:
           || ' FILES='     || CAST(FILE_COUNT     AS VARCHAR(10))
           || ' DSPF='      || CAST(DEVF_COUNT     AS VARCHAR(10)) AS VARCHAR(256)) AS detail_5
       FROM ${IA_LIBRARY}.IA_CODE_INFO
-      WHERE MEMBER_NAME = :program_name
+      WHERE MEMBER_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR LIBRARY_NAME = :library)
 
       UNION ALL
@@ -2435,7 +2468,7 @@ tools:
         CAST(INDICATOR_DATASTR   AS VARCHAR(256)) AS detail_4,
         CAST(FILEINFO_DATASTR    AS VARCHAR(256)) AS detail_5
       FROM ${IA_LIBRARY}.PROGRAM_TO_FILE_MAPPING_DETAILS
-      WHERE MEMBER_NAME = :program_name
+      WHERE MEMBER_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR LIBRARY = :library)
 
       UNION ALL
@@ -2451,7 +2484,7 @@ tools:
         CAST(''           AS VARCHAR(256)) AS detail_4,
         CAST(''           AS VARCHAR(256)) AS detail_5
       FROM ${IA_LIBRARY}.IAPGMCALLS
-      WHERE MBR_NAME = :program_name
+      WHERE MBR_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
 
       UNION ALL
 
@@ -2466,8 +2499,9 @@ tools:
         CAST(CALLED_OBJCT AS VARCHAR(256)) AS detail_4,
         CAST(''           AS VARCHAR(256)) AS detail_5
       FROM ${IA_LIBRARY}.IAPGMCALLS
-      WHERE (CALLED_OBJCT = :program_name OR CALLED_PROC = :program_name)
-        AND MBR_NAME <> :program_name
+      WHERE (CALLED_OBJCT = UPPER(CAST(:program_name AS VARCHAR(256)))
+             OR CALLED_PROC = UPPER(CAST(:program_name AS VARCHAR(256))))
+        AND MBR_NAME <> UPPER(CAST(:program_name AS VARCHAR(256)))
 
       UNION ALL
 
@@ -2482,7 +2516,7 @@ tools:
         CAST(''          AS VARCHAR(256)) AS detail_4,
         CAST(''          AS VARCHAR(256)) AS detail_5
       FROM ${IA_LIBRARY}.IASUBRDTL
-      WHERE MBR_NAME = :program_name
+      WHERE MBR_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND SR_OPCODE = 'BEGSR'
 
       UNION ALL
@@ -2498,7 +2532,7 @@ tools:
         CAST(PARAMETER_SEQ   AS VARCHAR(256)) AS detail_4,
         CAST(KEYWORDS        AS VARCHAR(256)) AS detail_5
       FROM ${IA_LIBRARY}.IAPRCPARM
-      WHERE MEMBER_NAME = :program_name
+      WHERE MEMBER_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR LIBRARY_NAME = :library)
 
       UNION ALL
@@ -2514,7 +2548,7 @@ tools:
         CAST(MAPED_FROM          AS VARCHAR(256)) AS detail_4,
         CAST(''                  AS VARCHAR(256)) AS detail_5
       FROM ${IA_LIBRARY}.IAALLREFPF
-      WHERE OBJECT_NAME = :program_name
+      WHERE OBJECT_NAME = UPPER(CAST(:program_name AS VARCHAR(256)))
         AND REFERENCED_OBJTYP IN ('*SRVPGM', '*BNDDIR', '*MODULE')
 
       ORDER BY section, name
@@ -2576,10 +2610,10 @@ tools:
       LEFT JOIN ${IA_LIBRARY}.IAFILEDTL base
         ON  base.FILE_NAME           = consumer.REF_FILE
         AND base.FIELD_NAME_INTERNAL = consumer.REF_FIELD
-      WHERE consumer.REF_FILE = :file_name
+      WHERE consumer.REF_FILE = UPPER(CAST(:file_name AS VARCHAR(256)))
         AND consumer.REF_FIELD IS NOT NULL
         AND consumer.REF_FIELD <> ''
-        AND (:field_name = '*ALL' OR consumer.REF_FIELD = :field_name)
+        AND (:field_name = '*ALL' OR consumer.REF_FIELD = UPPER(CAST(:field_name AS VARCHAR(256))))
         AND NOT (consumer.FILE_NAME = consumer.REF_FILE
                  AND consumer.FIELD_NAME_INTERNAL = consumer.REF_FIELD)
       ORDER BY consumer.REF_FIELD, consumer.LIBRARY_NAME, consumer.FILE_NAME, consumer.FIELD_NAME_INTERNAL
@@ -2670,7 +2704,7 @@ tools:
         CAST(PHCKXP  AS VARCHAR(2000))     AS check_expression,
         CAST(PHTRUN  AS VARCHAR(1))        AS expression_truncated
       FROM ${IA_LIBRARY}.IDSPFDCST
-      WHERE CSFILE = :file_name
+      WHERE CSFILE = UPPER(CAST(:file_name AS VARCHAR(256)))
         AND (
           :kind = '*ALL'
           OR (:kind = 'PRIMARY_KEY' AND PHCSTT = 'P')
@@ -2711,7 +2745,7 @@ tools:
         CAST('' AS VARCHAR(2000))          AS check_expression,
         CAST('' AS VARCHAR(1))             AS expression_truncated
       FROM ${IA_LIBRARY}.IDSPFDSLOM
-      WHERE SOFILE = :file_name
+      WHERE SOFILE = UPPER(CAST(:file_name AS VARCHAR(256)))
         AND SOFLD IS NOT NULL
         AND SOFLD <> ''
         AND (:kind = '*ALL' OR :kind = 'SELECT_OMIT')
@@ -2761,7 +2795,7 @@ tools:
       SELECT
         SOURCE_RRN, SOURCE_DATA
       FROM ${IA_LIBRARY}.IAQCLSRC
-      WHERE (:member_name = '*ALL' OR MEMBER_NAME = :member_name)
+      WHERE (:member_name = '*ALL' OR MEMBER_NAME = UPPER(CAST(:member_name AS VARCHAR(256))))
         AND (:library_name = '*ALL' OR LIBRARY_NAME = :library_name)
       ORDER BY LIBRARY_NAME, MEMBER_NAME, SOURCE_RRN
       OFFSET :offset ROWS
@@ -2822,7 +2856,7 @@ tools:
           :file_name = '*ALL'
           OR JNFILE IN (
             SELECT JNFILE FROM ${IA_LIBRARY}.IDSPFDJOIN
-            WHERE JNDNAM = :file_name OR JNJFNM = :file_name OR JNJTNM = :file_name
+            WHERE JNDNAM = UPPER(CAST(:file_name AS VARCHAR(256))) OR JNJFNM = UPPER(CAST(:file_name AS VARCHAR(256))) OR JNJTNM = UPPER(CAST(:file_name AS VARCHAR(256)))
           )
         )
       ORDER BY JNLIB, JNFILE, JNDIAL

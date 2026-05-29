@@ -27,7 +27,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | # | Tool | Description |
 |---|------|-------------|
 | 1 | `ia_find_object_usages` | Find all objects referencing a given object (filter by type or library) |
-| 2 | `ia_call_hierarchy` | Program call tree (CALLERS/CALLEES/BOTH); UNIONs IAPGMCALLS with IAALLREFPF *PGM↔*PGM fallback so menu programs and dynamic CALL targets are surfaced (`source_table` column distinguishes provenance) |
+| 2 | `ia_call_hierarchy` | Program call tree (CALLERS/CALLEES/BOTH); UNIONs IAPGMCALLS with an IAALLREFPF fallback and follows `*MENU`→`*PGM` edges, so programs launched by a menu and dynamic CALL targets are surfaced (`source_table` column distinguishes provenance) |
 | 3 | `ia_file_field_impact_analysis` | Blast radius of changing a field in a file |
 | 4 | `ia_program_variables` | All variables declared in a program, including constants with their declared values |
 | 5 | `ia_data_structures` | Data structure definitions and subfields |
@@ -35,7 +35,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 7 | `ia_subroutines` | BEGSR/EXSR details with usage counts |
 | 8 | `ia_file_overrides` | OVRDBF statements (real file routing) |
 | 9 | `ia_file_fields` | Field-level metadata for a database file (names, types, lengths, key sequence, reference chain) |
-| 10 | `ia_object_list` | Repository inventory filtered by object type, attribute, and library |
+| 10 | `ia_object_list` | Repository inventory filtered by object type, attribute, and library (list display files with `object_type=*FILE, object_attribute=DSPF`) |
 | 11 | `ia_program_summary` | Quick program overview with compile info and complexity; supports library filter |
 | 12 | `ia_program_detail` | Deep structural analysis (calls, files, subroutines, variables) |
 | 13 | `ia_rpg_source_tokens` | Token-level RPG source analysis |
@@ -46,7 +46,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 18 | `ia_dds_to_ddl_status` | DDS→DDL conversion tracking |
 | 19 | `ia_reference_count` | Lightweight reference count grouped by type |
 | 20 | `ia_unused_objects` | Dead-code candidates (unreferenced objects) |
-| 21 | `ia_circular_deps` | Detect circular call chains |
+| 21 | `ia_circular_deps` | Detect circular dependencies — SELF recursion (A→A) and MUTUAL (A↔B) — across IAPGMCALLS **and** IAALLREFPF (`cycle_type` + `source_table` columns) |
 | 22 | `ia_override_chain` | Chained OVRDBF dependencies (A→B→C) |
 | 23 | `ia_object_lifecycle` | Creation/change/last-used dates per object |
 | 24 | `ia_code_complexity` | Complexity metrics per source member; includes library column and library filter |

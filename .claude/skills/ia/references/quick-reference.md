@@ -1,6 +1,10 @@
 # iA Quick Reference — Tool Selection
 
 > **Rule Zero:** Never search the local workspace/filesystem for IBM i members or source — always resolve through `ia_*` tools. See [SKILL.md → Routing Pitfalls](../SKILL.md) for the common wrong-tool traps (F-specs, BIF search, join LFs, lifecycle).
+>
+> **Rule One:** UPPERCASE every object/member/file/field name before calling a tool (`iAdepRpt` → `IADEPRPT`). Names are stored uppercase; the tools also upper-case in SQL, but normalize on your side too.
+>
+> **Rule Two:** Empty result = not found. Report the negative; never substitute a similarly-named file and present its results instead.
 
 ## Top 10 Tools (80% of Queries)
 
@@ -59,13 +63,14 @@
 | What type/library is object X? | `ia_object_lookup` |
 | Does member X exist? Metadata? | `ia_member_lookup` |
 | Inventory of objects by type? | `ia_object_list` |
+| List all display files in the repo? | `ia_object_list(object_type='*FILE', object_attribute='DSPF')` — display files are `*FILE`/attr `DSPF`, not `*DSPF` |
 | Program metadata / compile info? | `ia_program_summary` |
 | Lifecycle / last-used dates? | `ia_object_lifecycle` |
 | Object size / largest or unused? | `ia_obj_size` |
 | Dead code (compiled)? | `ia_unused_objects` |
 | Dead code (sources)? | `ia_uncompiled_sources` |
 | Complexity hotspots? | `ia_code_complexity` |
-| Circular call chains? | `ia_circular_deps` |
+| Circular call chains? | `ia_circular_deps` (SELF recursion + MUTUAL A↔B; scans IAPGMCALLS + IAALLREFPF) |
 | Repo health / member inventory? | `ia_dashboard` |
 | List tables in iA library? | `ia_library_files` |
 | Raw RPG/CL token stream? | `ia_rpg_source_tokens`, `ia_cl_source_tokens` |

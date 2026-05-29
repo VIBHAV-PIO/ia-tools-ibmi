@@ -9,7 +9,7 @@
 | `ia_library_files` | List every file/table in any IBM i library |
 | `ia_object_lookup` | Resolve object name → type, library, attribute (supports `%` wildcards) |
 | `ia_member_lookup` | Source member metadata: existence, file/library/type, timestamps, line counts |
-| `ia_object_list` | Inventory objects by type (`*PGM`, `*SRVPGM`, `*FILE`, ...); optional library filter |
+| `ia_object_list` | Inventory objects by type (`*PGM`, `*SRVPGM`, `*FILE`, ...); optional library filter. List **all display files** with `object_type=*FILE, object_attribute=DSPF` (no `*DSPF` type exists) |
 | `ia_program_summary` | Program overview: metadata, compile info, complexity metrics |
 | `ia_program_spec_bundle` | **One-call spec inventory** — LOOKUP/COMPLEXITY/FILES/CALLS/PARAMS/BINDINGS (replaces 7 calls) |
 | `ia_program_detail` | Deep structural analysis with section filtering: CALLS, FILES, SUBROUTINES, VARIABLES, OVERRIDES, CALL_PARAMS |
@@ -29,9 +29,9 @@
 
 | Tool | Purpose |
 |------|---------|
-| `ia_call_hierarchy` | Returns callers and/or callees for a program or module |
+| `ia_call_hierarchy` | Returns callers and/or callees for a program or module; follows `*MENU`→`*PGM` so menu-launched programs appear |
 | `ia_call_parameters` | Parameters passed at each external call site |
-| `ia_circular_deps` | Detect two-way circular call chains |
+| `ia_circular_deps` | Detect circular dependencies: SELF recursion (A→A) + MUTUAL (A↔B); scans IAPGMCALLS **and** IAALLREFPF, with cycle_type + source_table columns |
 
 ## Program Internals
 
