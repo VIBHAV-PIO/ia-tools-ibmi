@@ -53,11 +53,11 @@
 | What references object X? | `ia_find_object_usages` |
 | How many refs to X? | `ia_reference_count` |
 | What does X call / who calls X? | `ia_call_hierarchy` |
-| Params passed at each call site? | `ia_call_parameters` |
+| Params passed at each call site? | `ia_call_parameters` — one row per param per call site; same callee on different `call_line`s = multiple sites, not dupes |
 | Impact of changing field F in file X? | `ia_file_field_impact_analysis` |
 | Variables in program X? | `ia_program_variables` |
 | Data structures in program X? | `ia_data_structures` |
-| Subroutines in program X? | `ia_subroutines` |
+| Subroutines in program X? | `ia_subroutines` (not `ia_program_detail` — this adds usage_count + line_number) |
 | File fields / formats for file X? | `ia_file_fields` |
 | File overrides (OVRDBF)? | `ia_file_overrides`, `ia_override_chain` |
 | What type/library is object X? | `ia_object_lookup` |

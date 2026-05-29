@@ -30,15 +30,15 @@
 | Tool | Purpose |
 |------|---------|
 | `ia_call_hierarchy` | Returns callers and/or callees for a program or module; follows `*MENU`→`*PGM` so menu-launched programs appear |
-| `ia_call_parameters` | Parameters passed at each external call site |
+| `ia_call_parameters` | Parameters passed at each external call site; includes `call_line` + `call_type`. Same callee on different `call_line`s = multiple call sites, not duplicate rows |
 | `ia_circular_deps` | Detect circular dependencies: SELF recursion (A→A) + MUTUAL (A↔B); scans IAPGMCALLS **and** IAALLREFPF, with cycle_type + source_table columns |
 
 ## Program Internals
 
 | Tool | Purpose |
 |------|---------|
-| `ia_program_variables` | All variables declared in a member (type, length, DS flag) |
-| `ia_data_structures` | Data structure definitions and subfields |
+| `ia_program_variables` | All variables declared in a member; `variable_type` is readable scope/kind (Global/Local/Program variable, Constant, Compile-time/Pre-runtime/Run-time array) |
+| `ia_data_structures` | Data structure definitions and subfields; `ds_type` is readable (Externally described / Internally described / Based) |
 | `ia_subroutines` | BEGSR/EXSR with usage counts (dead-subroutine detection); filter by member/library |
 
 ## Files & Overrides

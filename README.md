@@ -31,7 +31,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 3 | `ia_file_field_impact_analysis` | Blast radius of changing a field in a file |
 | 4 | `ia_program_variables` | All variables declared in a program, including constants with their declared values |
 | 5 | `ia_data_structures` | Data structure definitions and subfields |
-| 6 | `ia_call_parameters` | Parameters passed at each external call site |
+| 6 | `ia_call_parameters` | Parameters passed at each external call site, with the call's source line and call type (the same callee on different lines = multiple call sites) |
 | 7 | `ia_subroutines` | BEGSR/EXSR details with usage counts |
 | 8 | `ia_file_overrides` | OVRDBF statements (real file routing) |
 | 9 | `ia_file_fields` | Field-level metadata for a database file (names, types, lengths, key sequence, reference chain) |

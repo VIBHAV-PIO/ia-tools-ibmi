@@ -289,6 +289,8 @@ tools:
     description: >
       List all variables declared in a program/module with full type information.
       Includes standalone fields, data structure subfields, indicators, and constants.
+      variable_type returns readable scope/kind text (Global variable, Local variable,
+      Program variable, Constant, Compile-time/Pre-runtime/Run-time array).
       Queries IAPGMVARS — parsed from source code by iA's RPG/CL parser.
     parameters:
       - name: member_name
@@ -313,7 +315,17 @@ tools:
       SELECT
         IAV_LIB AS library,
         IAV_VAR AS variable_name,
-        IAV_TYP AS variable_type,
+        CASE IAV_TYP
+          WHEN 'PG_LO' THEN 'Local variable'
+          WHEN 'PG_GL' THEN 'Global variable'
+          WHEN 'PG'    THEN 'Program variable'
+          WHEN 'CONST' THEN 'Constant'
+          WHEN 'RT_AR' THEN 'Run-time array'
+          WHEN 'CT_AR' THEN 'Compile-time array'
+          WHEN 'PT_AR' THEN 'Pre-runtime array'
+          WHEN ''      THEN '(unknown)'
+          ELSE IAV_TYP
+        END AS variable_type,
         IAV_DTYP AS data_type,
         IAV_LEN AS field_length,
         IAV_DEC AS decimal_positions,
@@ -333,9 +345,9 @@ tools:
     maxDisplayRows: 1000
     description: >
       Get all data structure definitions in a program, including nested DS, based DS,
-      qualified DS, and their subfields with positional info. Returns a ds_type column
-      (E=externally defined, I=internally defined, B=based) so callers can filter
-      internal vs external DS.
+      qualified DS, and their subfields with positional info. ds_type returns readable
+      text (Externally described, Internally described, Based) so callers can tell
+      external from internal DS.
       Queries IAPGMDS — parsed from D-specs and free-format DCL-DS.
     parameters:
       - name: member_name
@@ -360,7 +372,12 @@ tools:
       SELECT
         LIBRARY_NAME AS library,
         DATASTR_NAME AS ds_name,
-        DATASTR_TYPE AS ds_type,
+        CASE DATASTR_TYPE
+          WHEN 'E' THEN 'Externally described'
+          WHEN 'I' THEN 'Internally described'
+          WHEN 'B' THEN 'Based'
+          ELSE DATASTR_TYPE
+        END AS ds_type,
         DS_FLD_NAME AS field_name,
         DS_FLD_TYPE AS field_type,
         FROM_LEN_FLD AS from_position,
@@ -382,10 +399,12 @@ tools:
     maxDisplayRows: 1000
     description: >
       Get parameter details for all external calls made by a program.
-      Shows what data is passed to each called program/procedure.
-      Queries IACALLPARM — parameter names (PARM_NAME) and call sequence are
-      reliably populated. PARM_TYPE and PARM_LENGTH depend on iA parser version
-      and call type; they may be null for CALL/CALLP statements.
+      Shows what data is passed to each called program/procedure. Each row is one
+      parameter at one call site: call_line is the source line of the call and
+      call_type is the call op (CALL/CALLP/CALLB). The same called_program repeated
+      across different call_line values means the program calls it from multiple sites
+      (not duplicate rows). Queries IACALLPARM — parameter_name and call_sequence are
+      reliably populated; parameter_type and parameter_length may be null for CALL/CALLP.
     parameters:
       - name: member_name
         type: string
@@ -409,14 +428,16 @@ tools:
       SELECT
         MBR_LIB AS library,
         CALLED_OBJECT AS called_program,
+        CALL_TYPE AS call_type,
+        MBR_RRN AS call_line,
+        CALL_SEQ AS call_sequence,
         PARM_NAME AS parameter_name,
         PARM_TYPE AS parameter_type,
-        PARM_LENGTH AS parameter_length,
-        CALL_SEQ AS call_sequence
+        PARM_LENGTH AS parameter_length
       FROM ${IA_LIBRARY}.IACALLPARM
       WHERE MBR_NAME = UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:library = '*ALL' OR MBR_LIB = :library)
-      ORDER BY MBR_LIB, CALLED_OBJECT, CALL_SEQ
+      ORDER BY MBR_LIB, CALLED_OBJECT, MBR_RRN, CALL_SEQ
       FETCH FIRST :limit ROWS ONLY
 
   # ── 7. Subroutines — BEGSR/ENDSR details with usage counts ─────────────
@@ -747,7 +768,17 @@ tools:
 
       SELECT 'VARIABLES' AS section,
         IAV_VAR AS name,
-        IAV_TYP AS detail_1,
+        CASE IAV_TYP
+          WHEN 'PG_LO' THEN 'Local variable'
+          WHEN 'PG_GL' THEN 'Global variable'
+          WHEN 'PG'    THEN 'Program variable'
+          WHEN 'CONST' THEN 'Constant'
+          WHEN 'RT_AR' THEN 'Run-time array'
+          WHEN 'CT_AR' THEN 'Compile-time array'
+          WHEN 'PT_AR' THEN 'Pre-runtime array'
+          WHEN ''      THEN '(unknown)'
+          ELSE IAV_TYP
+        END AS detail_1,
         IAV_DTYP AS detail_2,
         CAST(IAV_LEN AS VARCHAR(50)) AS detail_3
       FROM ${IA_LIBRARY}.IAPGMVARS

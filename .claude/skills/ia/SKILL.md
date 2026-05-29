@@ -32,6 +32,8 @@ If a tool returns zero rows for a name you passed, the object/file/field **does 
 | Lifecycle / when modified for X (library unknown) | `ia_object_lifecycle(object_name=X)` — library & type are optional | passing the iA repo library as the object library |
 | List **all** display files in the repo | `ia_object_list(object_type='*FILE', object_attribute='DSPF')` | `ia_find_object_usages` — it's where-used for ONE object, not an inventory; there is no `*DSPF` type |
 | Every program a menu launches (e.g. CASEMNU) | `ia_call_hierarchy(program_name=MENU, direction='CALLEES')` — now follows `*MENU`→`*PGM` | assuming menus aren't tracked |
+| List the subroutines in program X | `ia_subroutines(member_name=X)` — adds usage_count + line_number (dead-sub detection) | `ia_program_detail` SUBROUTINES section — omits usage count and line number |
+| Parameters passed by program X | `ia_call_parameters(member_name=X)` — one row per parameter per call site; same callee on different `call_line`s = multiple call sites, not duplicates | reading repeated rows as dupes |
 
 ## Top 10 Tools (80% of Queries)
 
