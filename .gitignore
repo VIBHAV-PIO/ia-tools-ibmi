@@ -17,7 +17,4 @@ docs/
 .bob/
 mcp.db*
 __pycache__/
-.venv/
-documentation-flow.md 
-skill-plugins.md
-public-skill-readme.md 
+.venv/ 
