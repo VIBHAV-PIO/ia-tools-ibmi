@@ -20,7 +20,7 @@ Use them with **VS Code GitHub Copilot**, **Claude Code**, or any MCP-compatible
 
 A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to query all 35+ iA tables. Invoke with `/ia` in any Claude Code session. The skill includes table schemas, SQL patterns, and query workflows in its `references/` folder.
 
-## Tools (50 custom + 2 built-in)
+## Tools (51 custom + 2 built-in)
 
 ### Custom iA Tools (defined in `impact-analysis.yaml`)
 
@@ -67,7 +67,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 34 | `ia_variable_ops` | Find variable declarations, assignments, BIFs; supports cross-member opcode search (e.g., all members using CLEAR) |
 | 35 | `ia_klist_usage` | Find KLIST/KFLD key list definitions; filter by key field name with `kfld_name` (supports % wildcards) |
 | 36 | `ia_application_area` | List areas/objects (forward) or find which areas contain an object (reverse lookup via `object_name`) |
-| 37 | `ia_sql_names` | Map SQL long names to system short names |
+| 37 | `ia_sql_names` | Map SQL long names to system short names for procedures/functions |
 | 38 | `ia_program_files` | List files used by a program with PREFIX details |
 | 39 | `ia_rpg_source` | Read RPG source code with optional spec-type and member filtering (supports *ALL member) |
 | 40 | `ia_rpg_source_search` | Search RPG source across members for keywords |
@@ -81,6 +81,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 48 | `ia_file_constraints` | DB constraints (PK/UQ/FK/CHK from IDSPFDCST) and LF select/omit rules (from IDSPFDSLOM) in one call, with decoded delete/update rules and parent file links |
 | 49 | `ia_cl_source` | Read CL/CLLE/CLP source code line by line (queries IAQCLSRC); supports offset/limit pagination for sources >10000 lines |
 | 50 | `ia_join_logical_files` | List join logical files and their join structure (joined physical files + join field pairs) from IDSPFDJOIN; pass a physical file to find join LFs over it, or `*ALL` to list all |
+| 51 | `ia_sql_table_names` | Resolve SQL long↔short names for tables + columns (`CREATE TABLE ... FOR SYSTEM NAME`); searches both long and short names at object and column level. Take the 10-char `system_short_name` to chain into where-used / field-impact tools. Complements `ia_sql_names` (routines) |
 
 ### Built-in MCP Server Tools
 
@@ -168,13 +169,13 @@ IBM i MCP Server listening on http://localhost:3010
 code .
 ```
 
-VS Code detects `.vscode/mcp.json` and connects to the running MCP server at `http://localhost:3010/mcp`. The 50 iA tools plus built-in SQL tools become available in Copilot Chat.
+VS Code detects `.vscode/mcp.json` and connects to the running MCP server at `http://localhost:3010/mcp`. The 51 iA tools plus built-in SQL tools become available in Copilot Chat.
 
 ### Step 5: Use iA tools in Copilot Chat
 
 1. **Open Copilot Chat**: Press `Ctrl+Alt+I` (Windows/Linux) or `Cmd+Alt+I` (Mac)
 2. **Switch to Agent mode**: Click the mode dropdown at the top of the chat panel and select **"Agent"**
-3. **Verify tools are loaded**: Click the **tools icon** (wrench/hammer) at the top-left of the chat input — you should see the 50 `ia-*` tools plus `execute_sql` and `describe_sql_object` listed under "ibmi-ia-tools"
+3. **Verify tools are loaded**: Click the **tools icon** (wrench/hammer) at the top-left of the chat input — you should see the 51 `ia-*` tools plus `execute_sql` and `describe_sql_object` listed under "ibmi-ia-tools"
 4. **Ask a question** — the agent will automatically pick the right iA tool:
 
 ```

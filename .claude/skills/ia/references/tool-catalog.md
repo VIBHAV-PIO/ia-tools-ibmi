@@ -1,4 +1,4 @@
-# iA Tool Catalog (50 Tools)
+# iA Tool Catalog (51 Tools)
 
 **Rule:** Prefer the dedicated `ia_*` tools.
 
@@ -89,5 +89,6 @@
 | `ia_variable_ops` | Variable declarations, assignments, BIF usage; `*ALL` for cross-member |
 | `ia_klist_usage` | KLIST/KFLD key list definitions; `%` wildcards in kfld_name |
 | `ia_application_area` | Forward: area → objects; Reverse: object → areas (`%` supported) |
-| `ia_sql_names` | SQL long/short name mapping |
+| `ia_sql_names` | SQL long/short name mapping for **routines** (procedures/functions) |
+| `ia_sql_table_names` | SQL long↔short name mapping for **tables + columns** (`CREATE TABLE ... FOR SYSTEM NAME`); resolve a long name to its 10-char system name before where-used. Complements `ia_sql_names` |
 | `ia_program_files` | Program file usage with PREFIX/RENAME; filter by member/library |

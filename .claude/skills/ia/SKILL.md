@@ -7,7 +7,7 @@ description: Guide for using iA by programmers.io MCP tools to analyze IBM i pro
 
 iA by [programmers.io](https://programmers.io/ia/) pre-parses IBM i source (RPG, CL, COBOL, DDS) into a queryable repository accessed through the `ia_*` MCP tools.
 
-**Goal:** Answer most questions in 1-2 tool calls. Consult [quick-reference.md](references/quick-reference.md) for tool selection, [tool-catalog.md](references/tool-catalog.md) for the full 50-tool list.
+**Goal:** Answer most questions in 1-2 tool calls. Consult [quick-reference.md](references/quick-reference.md) for tool selection, [tool-catalog.md](references/tool-catalog.md) for the full 51-tool list.
 
 ## Rule Zero — Always Query iA, Never the Workspace
 
@@ -34,6 +34,8 @@ If a tool returns zero rows for a name you passed, the object/file/field **does 
 | Every program a menu launches (e.g. CASEMNU) | `ia_call_hierarchy(program_name=MENU, direction='CALLEES')` — now follows `*MENU`→`*PGM` | assuming menus aren't tracked |
 | List the subroutines in program X | `ia_subroutines(member_name=X)` — adds usage_count + line_number (dead-sub detection) | `ia_program_detail` SUBROUTINES section — omits usage count and line number |
 | Parameters passed by program X | `ia_call_parameters(member_name=X)` — one row per parameter per call site; same callee on different `call_line`s = multiple call sites, not duplicates | reading repeated rows as dupes |
+| Where-used / field impact for a SQL **long** name (e.g. `CUSTOMER_MASTER`, column `ERROR_MESSAGE`) | `ia_sql_table_names(name_pattern=X)` → take `system_short_name`, then `ia_find_object_usages` / `ia_file_field_impact_analysis` on that 10-char name | passing the long name straight to where-used — it matches only the 10-char system name and caps input at 10 chars, so it silently returns nothing |
+| Long↔short name of a SQL table/column vs a procedure/function | `ia_sql_table_names` (tables + columns) | `ia_sql_names` — that one covers routines (procedures/functions) only |
 
 ## Top 10 Tools (80% of Queries)
 
@@ -64,6 +66,8 @@ If a tool returns zero rows for a name you passed, the object/file/field **does 
 
 ### Field Impact Analysis (3-4 calls, synthesize into one response)
 
+> If `X`/`Y` is a SQL **long** name (a `CREATE TABLE`/column long name, often >10 chars), resolve it first: `ia_sql_table_names(name_pattern=X)` → use the returned `system_short_name`/`column_short_name`. The PF and field cross-references are keyed by the 10-char system name.
+
 1. `ia_file_field_impact_analysis(file_name=X, field_name=Y)` → Direct PF references. **If this returns empty, the file/field doesn't exist — say so (Rule Two), don't analyze a different file.**
 2. `ia_file_dependencies(file_name=X)` → LFs/indexes/views over PF
 3. `ia_find_object_usages` on every STRUCTURAL `*FILE` from step 1 (parallel)
@@ -73,7 +77,7 @@ Present as four sections: **Direct (NEEDS_CHANGE)**, **Direct (NEEDS_RECOMPILE)*
 
 ## When to Chain
 
-**DO chain:** `*SRVPGM` in results (amplifier — check what binds to it), field impact (run all steps).
+**DO chain:** `*SRVPGM` in results (amplifier — check what binds to it), field impact (run all steps), a **SQL long name** before any system-name tool (resolve via `ia_sql_table_names` → use the `system_short_name`).
 
 **DON'T chain:** Simple counts (count your results), every `*PGM` (only critical ones), `ia_member_lookup` just for location.
 
@@ -128,7 +132,7 @@ Do not attempt to diagnose server-side issues or retry indefinitely.
 | Need | Load |
 |------|------|
 | Tool selection unclear | [quick-reference.md](references/quick-reference.md) |
-| Full 50-tool list | [tool-catalog.md](references/tool-catalog.md) |
+| Full 51-tool list | [tool-catalog.md](references/tool-catalog.md) |
 | Complex analysis chains | [query-flows.md](references/query-flows.md) |
 | Analysis playbooks | [playbook.md](references/playbook.md) |
 | Program documentation | [program-documentation.md](references/program-documentation.md) |

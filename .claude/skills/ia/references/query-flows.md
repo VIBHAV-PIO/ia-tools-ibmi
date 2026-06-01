@@ -252,11 +252,24 @@ ia_application_area(object_name="%CUST%")   → Wildcard: areas with any CUST* o
 
 ### QF-18: "SQL name resolution"
 
-**Single query:**
+**Routines (procedures/functions):**
 ```
 ia_sql_names(name_pattern="STORE%", limit=50)
 ```
-Returns: SQL long names ↔ 10-char system names mapping.
+Returns: SQL long names ↔ 10-char system names for procedures/functions.
+
+**Tables & columns:**
+```
+ia_sql_table_names(name_pattern="CUSTOMER%")
+```
+Returns: object + column long↔short names, datatype/length, source member — for `CREATE TABLE ... FOR SYSTEM NAME` objects.
+
+**Chain — where-used by a SQL long name:**
+```
+1. ia_sql_table_names(name_pattern="AI_AUDIT_LOG") → system_short_name = AI_AU00001
+2. ia_find_object_usages(object_name="AI_AU00001")  → programs/LFs referencing it
+```
+The where-used cross-reference (and `ia_object_lookup` / `ia_file_field_impact_analysis`) store only the 10-char system name and cap input at 10 chars, so resolve the long name first.
 
 ---
 

@@ -36,6 +36,7 @@
 | "Orphaned sources?" | `ia_uncompiled_sources` | Sources without compiled objects |
 | "Complexity hotspots?" | `ia_code_complexity` (member=*ALL) | All programs ranked by complexity |
 | "Find object named X?" | `ia_object_lookup` | Type/library/attr (supports % wildcards) |
+| "System name for a SQL long table/column name?" (or where-used for one) | `ia_sql_table_names` → then `ia_find_object_usages` on the `system_short_name` | Long↔short for tables + columns; the where-used cross-reference only knows the 10-char system name |
 | "Does member X exist?" | `ia_member_lookup` | Source file, library, type, timestamps |
 | "Repository overview?" | `ia_dashboard` | Full inventory stats |
 | "Copybook impact?" | `ia_copybook_impact` | Programs including the copybook |

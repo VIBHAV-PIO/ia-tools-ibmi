@@ -46,6 +46,7 @@ body:
         - ia_klist_usage
         - ia_application_area
         - ia_sql_names
+        - ia_sql_table_names
         - ia_program_files
         - ia_rpg_source
         - ia_rpg_source_search

@@ -119,6 +119,9 @@ Call `ia_program_variables` → Group: standalone fields, DS subfields (likely D
 ### P16: "Resolve SQL long name to system name"
 `ia_sql_names(name_pattern="STORE%")` → Maps SQL long names ↔ 10-char system names → Essential for SQL procedure/function analysis.
 
+### P16b: "Resolve a SQL long table/column name (and trace its usage)"
+`ia_sql_table_names(name_pattern="AI_AUDIT_LOG")` → object + column long↔short map (datatype/length, source member) for `CREATE TABLE ... FOR SYSTEM NAME` tables → To trace usage of a long-named table, take `system_short_name` and chain to `ia_find_object_usages` / `ia_file_field_impact_analysis` — the cross-reference only knows the 10-char system name. Complements `ia_sql_names` (routines).
+
 ### P17: "What happens if I change this service program?" (SRVPGM Impact)
 Service programs are **cascade amplifiers** — changes affect all binding programs.
 

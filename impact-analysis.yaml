@@ -2892,3 +2892,69 @@ tools:
         )
       ORDER BY JNLIB, JNFILE, JNDIAL
       FETCH FIRST :limit ROWS ONLY
+
+  # ── 51. SQL Table/Column Names — long↔short name resolution for SQL tables (IAESQLFFD) ──
+  ia_sql_table_names:
+    name: ia-sql-table-names
+    source: ibmi
+    fetchAllRows: true
+    maxDisplayRows: 1000
+    description: >
+      Resolve SQL long names to IBM i system short names (and vice versa) for SQL-created
+      tables and their columns. CREATE TABLE ... FOR SYSTEM NAME assigns a 10-char system
+      name (e.g. AI_AU00001) that differs from the long name (e.g. AI_AUDIT_LOG); compiled
+      programs and the where-used cross-reference store the SYSTEM name, while DDL/SQL uses
+      the LONG name. Searches object AND column long/short names, so you can come in from any
+      of them. Use this to translate a long table/column name to its 10-char system name
+      BEFORE calling system-name-based tools (ia_find_object_usages,
+      ia_file_field_impact_analysis, ia_object_lookup) — those match the system name only and
+      cap names at 10 chars, so a long name never resolves there directly. Complements
+      ia_sql_names, which covers procedures/functions (not tables). Queries IAESQLFFD.
+    parameters:
+      - name: name_pattern
+        type: string
+        description: "Name to search for (supports % wildcards) — matched against both long and short names, at object and column level"
+        required: true
+        minLength: 1
+        maxLength: 128
+      - name: object_type
+        type: string
+        description: "Filter by SQL object type as stored in IAESQLFFD (e.g. 'CREATE TBL'), or *ALL (default: *ALL)"
+        required: false
+        default: "*ALL"
+        maxLength: 30
+      - name: library_name
+        type: string
+        description: "Filter by the library holding the SQL object, or *ALL (default: *ALL)"
+        required: false
+        default: "*ALL"
+        maxLength: 10
+      - name: limit
+        type: integer
+        description: "Max results (default: 200)"
+        required: false
+        default: 200
+        min: 1
+        max: 1000
+    statement: |
+      SELECT
+        OBJ_SQL_NAME AS sql_long_name,
+        OBJ_SYS_NAME AS system_short_name,
+        OBJ_TYPE     AS object_type,
+        LIBRARY_NAME AS library,
+        FLD_SQL_NAME AS column_long_name,
+        FLD_SYS_NAME AS column_short_name,
+        FLD_DATATYPE AS data_type,
+        FLD_LENGTH   AS length,
+        FLD_DECPOS   AS decimals,
+        MEMBER_NAME  AS source_member,
+        SRC_PF_NAME  AS source_file
+      FROM ${IA_LIBRARY}.IAESQLFFD
+      WHERE (UPPER(OBJ_SQL_NAME) LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
+             OR OBJ_SYS_NAME       LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
+             OR UPPER(FLD_SQL_NAME) LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
+             OR FLD_SYS_NAME       LIKE UPPER(CAST(:name_pattern AS VARCHAR(256))))
+        AND (:object_type = '*ALL' OR OBJ_TYPE = :object_type)
+        AND (:library_name = '*ALL' OR LIBRARY_NAME = UPPER(CAST(:library_name AS VARCHAR(256))))
+      ORDER BY LIBRARY_NAME, OBJ_SYS_NAME, FLD_SYS_NAME
+      FETCH FIRST :limit ROWS ONLY
