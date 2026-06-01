@@ -35,7 +35,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 7 | `ia_subroutines` | BEGSR/EXSR details with usage counts |
 | 8 | `ia_file_overrides` | OVRDBF statements (real file routing) |
 | 9 | `ia_file_fields` | Field-level metadata for a database file (names, types, lengths, key sequence, reference chain) |
-| 10 | `ia_object_list` | Repository inventory filtered by object type, attribute, and library (list display files with `object_type=*FILE, object_attribute=DSPF`) |
+| 10 | `ia_object_list` | Repository inventory filtered by object type, attribute, and library (list display files with `object_type=*FILE, object_attribute=DSPF`; separate physical files with `object_attribute=PF-DATA` vs `PF-SRC`, or read the `pf_kind` label) |
 | 11 | `ia_program_summary` | Quick program overview with compile info and complexity; supports library filter |
 | 12 | `ia_program_detail` | Deep structural analysis (calls, files, subroutines, variables) |
 | 13 | `ia_rpg_source_tokens` | Token-level RPG source analysis |
@@ -45,7 +45,7 @@ A token-efficient skill at `.claude/skills/ia/` that teaches AI agents how to qu
 | 17 | `ia_exception_log` | iA parser exception log |
 | 18 | `ia_dds_to_ddl_status` | DDS→DDL conversion tracking |
 | 19 | `ia_reference_count` | Lightweight reference count grouped by type |
-| 20 | `ia_unused_objects` | Dead-code candidates (unreferenced objects) |
+| 20 | `ia_unused_objects` | Dead-code candidates (unreferenced objects); source physical files are excluded and each row shows its attribute |
 | 21 | `ia_circular_deps` | Detect circular dependencies — SELF recursion (A→A) and MUTUAL (A↔B) — across IAPGMCALLS **and** IAALLREFPF (`cycle_type` + `source_table` columns) |
 | 22 | `ia_override_chain` | Chained OVRDBF dependencies (A→B→C) |
 | 23 | `ia_object_lifecycle` | Creation/change/last-used dates per object |

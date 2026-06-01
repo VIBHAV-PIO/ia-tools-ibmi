@@ -61,14 +61,14 @@
 | Subroutines in program X? | `ia_subroutines` (not `ia_program_detail` — this adds usage_count + line_number) |
 | File fields / formats for file X? | `ia_file_fields` |
 | File overrides (OVRDBF)? | `ia_file_overrides`, `ia_override_chain` |
-| What type/library is object X? | `ia_object_lookup` |
-| Does member X exist? Metadata? | `ia_member_lookup` |
-| Inventory of objects by type? | `ia_object_list` |
+| What type/library is object X? | `ia_object_lookup` (compiled objects; if empty, try `ia_member_lookup` for source-only members) |
+| Does member X exist? Metadata? | `ia_member_lookup` — pass the bare name; exact short names now resolve, add `%` only for wildcard search |
+| Inventory of objects by type? | `ia_object_list`; for physical files use `object_attribute=PF-DATA` / `PF-SRC` (plain `PF` returns both with a `pf_kind` label) |
 | List all display files in the repo? | `ia_object_list(object_type='*FILE', object_attribute='DSPF')` — display files are `*FILE`/attr `DSPF`, not `*DSPF` |
 | Program metadata / compile info? | `ia_program_summary` |
 | Lifecycle / last-used dates? | `ia_object_lifecycle` |
 | Object size / largest or unused? | `ia_obj_size` |
-| Dead code (compiled)? | `ia_unused_objects` |
+| Dead code (compiled)? | `ia_unused_objects` (source physical files excluded; each row shows `OBJECT_ATTRIBUTE`) |
 | Dead code (sources)? | `ia_uncompiled_sources` |
 | Complexity hotspots? | `ia_code_complexity` |
 | Circular call chains? | `ia_circular_deps` (SELF recursion + MUTUAL A↔B; scans IAPGMCALLS + IAALLREFPF) |

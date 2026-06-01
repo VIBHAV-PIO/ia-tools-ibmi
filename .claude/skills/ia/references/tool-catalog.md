@@ -7,10 +7,10 @@
 | Tool | Purpose |
 |------|---------|
 | `ia_library_files` | List every file/table in any IBM i library |
-| `ia_object_lookup` | Resolve object name → type, library, attribute (supports `%` wildcards) |
-| `ia_member_lookup` | Source member metadata: existence, file/library/type, timestamps, line counts |
-| `ia_object_list` | Inventory objects by type (`*PGM`, `*SRVPGM`, `*FILE`, ...); optional library filter. List **all display files** with `object_type=*FILE, object_attribute=DSPF` (no `*DSPF` type exists) |
-| `ia_program_summary` | Program overview: metadata, compile info, complexity metrics |
+| `ia_object_lookup` | Resolve object name → type, library, attribute (supports `%` wildcards). Covers **compiled objects** only; if empty, try `ia_member_lookup` for source-only members |
+| `ia_member_lookup` | Source member metadata: existence, file/library/type, timestamps, line counts. Pass the bare name for an exact match (names shorter than 10 chars now resolve); add `%` only for prefix/substring search |
+| `ia_object_list` | Inventory objects by type (`*PGM`, `*SRVPGM`, `*FILE`, ...); optional library filter. List **all display files** with `object_type=*FILE, object_attribute=DSPF` (no `*DSPF` type exists). For physical files, `pf_kind` labels each row Data PF / Source PF; filter `object_attribute=PF-DATA` or `PF-SRC` for one kind |
+| `ia_program_summary` | Program overview: metadata, compile info, module type, complexity metrics |
 | `ia_program_spec_bundle` | **One-call spec inventory** — LOOKUP/COMPLEXITY/FILES/CALLS/PARAMS/BINDINGS (replaces 7 calls) |
 | `ia_program_detail` | Deep structural analysis with section filtering: CALLS, FILES, SUBROUTINES, VARIABLES, OVERRIDES, CALL_PARAMS |
 | `ia_dashboard` | Repo health summary: categories, line counts, library map |
@@ -71,7 +71,7 @@
 | `ia_object_lifecycle` | Creation/change/last-used dates, days-used count |
 | `ia_obj_size` | Object size + usage category (Never/Rare) — lookup or rank |
 | `ia_code_complexity` | IF/DO/SQL/GOTO/PROC counts, executable lines; includes LIBRARY_NAME |
-| `ia_unused_objects` | Dead code candidates (compiled but never referenced) |
+| `ia_unused_objects` | Dead code candidates (compiled but never referenced); source physical files are excluded and each row shows `OBJECT_ATTRIBUTE` |
 | `ia_uncompiled_sources` | Orphaned sources (never compiled into objects) |
 | `ia_dds_to_ddl_status` | DDS→DDL modernization tracking |
 | `ia_exception_log` | iA parser errors per member |

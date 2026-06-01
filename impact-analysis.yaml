@@ -598,7 +598,13 @@ tools:
       Optionally filter by library to scope results to a single library.
       To list every display file, filter object_type=*FILE with object_attribute=DSPF
       (display files are *FILE objects with the DSPF attribute — there is no *DSPF type).
-      Queries OBJECT_DETAILS — the master object inventory. Fixes #76.
+      Physical files (attribute PF) come in two kinds that IBM i stores identically:
+      DATA physical files and SOURCE physical files (QRPGLESRC, QCLSRC, etc.). The
+      pf_kind column labels each PF row 'Data PF' or 'Source PF' (a file is a source PF
+      if it holds source members or copybooks anywhere in the repo); pass
+      object_attribute=PF-DATA or PF-SRC to return only one
+      kind (plain PF returns both). Queries OBJECT_DETAILS — the master object inventory.
+      Fixes #76.
     parameters:
       - name: object_type
         type: string
@@ -607,7 +613,7 @@ tools:
         default: "*ALL"
       - name: object_attribute
         type: string
-        description: "Filter by attribute: *ALL, RPGLE, CLLE, RPG, CLP, CLE, PF, LF, DSPF, PRTF (default: *ALL)"
+        description: "Filter by attribute: *ALL, RPGLE, CLLE, RPG, CLP, CLE, PF, LF, DSPF, PRTF (default: *ALL). PF returns both kinds of physical file; use PF-DATA for data files only or PF-SRC for source physical files only."
         required: false
         default: "*ALL"
       - name: library
@@ -626,11 +632,25 @@ tools:
     statement: |
       SELECT
         OBJECT_NAME, OBJECT_TYPE, OBJECT_ATTRIBUTE, OBJECT_LIBRARY,
+        CASE WHEN OBJECT_ATTRIBUTE = 'PF'
+             THEN CASE WHEN SF_NAME IS NOT NULL THEN 'Source PF' ELSE 'Data PF' END
+             ELSE '' END AS PF_KIND,
         SOURCE_FILE, SOURCE_MEMBER,
         CREATION_DATE, EXCLUDED_FLAG
       FROM ${IA_LIBRARY}.OBJECT_DETAILS
+      LEFT JOIN (
+        SELECT SOURCE_FILE AS SF_NAME FROM ${IA_LIBRARY}.IAMEMBER
+        UNION
+        SELECT COPYBOOK_SOURCE_FILE FROM ${IA_LIBRARY}.COPYBOOK_MEMBER_DETAIL
+      ) SRCPF
+        ON SF_NAME = OBJECT_NAME
       WHERE (:object_type = '*ALL' OR OBJECT_TYPE = :object_type)
-        AND (:object_attribute = '*ALL' OR OBJECT_ATTRIBUTE = :object_attribute)
+        AND (
+          :object_attribute = '*ALL'
+          OR (:object_attribute = 'PF-SRC'  AND OBJECT_ATTRIBUTE = 'PF' AND SF_NAME IS NOT NULL)
+          OR (:object_attribute = 'PF-DATA' AND OBJECT_ATTRIBUTE = 'PF' AND SF_NAME IS NULL)
+          OR (:object_attribute NOT IN ('*ALL', 'PF-SRC', 'PF-DATA') AND OBJECT_ATTRIBUTE = :object_attribute)
+        )
         AND (:library = '*ALL' OR OBJECT_LIBRARY = :library)
       ORDER BY OBJECT_TYPE, OBJECT_ATTRIBUTE, OBJECT_NAME
       FETCH FIRST :limit ROWS ONLY
@@ -670,6 +690,7 @@ tools:
         i.PGM_LIB,
         i.PGM_TYP,
         i.MOD_NAME,
+        i.MOD_TYP,
         i.MOD_ATTRIB,
         i.SRC_FILE,
         i.SRC_LIB,
@@ -1038,7 +1059,11 @@ tools:
     maxDisplayRows: 1000
     description: >
       Find objects in the repository that are not referenced by any other object.
-      Useful for identifying dead code candidates for cleanup.
+      Useful for identifying dead code candidates for cleanup. Returns OBJECT_ATTRIBUTE
+      so each candidate's kind is visible. Source physical files (QRPGLESRC, QCLSRC,
+      QDDSSRC, etc.) are EXCLUDED — they hold source members or copybooks and are never
+      themselves referenced, so they are not obsolete; they are detected by whether any
+      member or copybook lives in them. Queries OBJECT_DETAILS and IAALLREFPF.
     parameters:
       - name: object_type
         type: string
@@ -1056,6 +1081,7 @@ tools:
       SELECT
         od.OBJECT_NAME,
         od.OBJECT_TYPE,
+        od.OBJECT_ATTRIBUTE,
         od.OBJECT_LIBRARY,
         od.CREATION_DATE
       FROM ${IA_LIBRARY}.OBJECT_DETAILS od
@@ -1063,6 +1089,14 @@ tools:
         ON od.OBJECT_NAME = ref.REFERENCED_OBJ
       WHERE ref.REFERENCED_OBJ IS NULL
         AND (:object_type = '*ALL' OR od.OBJECT_TYPE = :object_type)
+        AND NOT EXISTS (
+          SELECT 1 FROM ${IA_LIBRARY}.IAMEMBER m
+          WHERE m.SOURCE_FILE = od.OBJECT_NAME
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM ${IA_LIBRARY}.COPYBOOK_MEMBER_DETAIL c
+          WHERE c.COPYBOOK_SOURCE_FILE = od.OBJECT_NAME
+        )
       ORDER BY od.OBJECT_TYPE, od.OBJECT_NAME
       FETCH FIRST :limit ROWS ONLY
 
@@ -1939,9 +1973,9 @@ tools:
         SOURCE_MEMBER,
         SOURCE_FILE
       FROM ${IA_LIBRARY}.IA_LONG_SHORT_NAME
-      WHERE (ROUTINE_NAME LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
-             OR EXTERNAL_NAME LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
-             OR SOURCE_MEMBER LIKE UPPER(CAST(:name_pattern AS VARCHAR(256))))
+      WHERE (RTRIM(ROUTINE_NAME) LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
+             OR RTRIM(EXTERNAL_NAME) LIKE UPPER(CAST(:name_pattern AS VARCHAR(256)))
+             OR RTRIM(SOURCE_MEMBER) LIKE UPPER(CAST(:name_pattern AS VARCHAR(256))))
         AND (:routine_type = '*ALL' OR ROUTINE_TYPE = :routine_type)
       ORDER BY ROUTINE_NAME
       FETCH FIRST :limit ROWS ONLY
@@ -2222,7 +2256,7 @@ tools:
         ON S.MEMBER_NAME = M.MEMBER_NAME
         AND S.MEMBER_LIB = M.SOURCE_LIBRARY
         AND S.MBR_SRC_PF = M.SOURCE_FILE
-      WHERE M.MEMBER_NAME LIKE UPPER(CAST(:member_name AS VARCHAR(256)))
+      WHERE RTRIM(M.MEMBER_NAME) LIKE UPPER(CAST(:member_name AS VARCHAR(256)))
         AND (:source_file = '*ALL' OR M.SOURCE_FILE = :source_file)
         AND (:source_library = '*ALL' OR M.SOURCE_LIBRARY = :source_library)
         AND (:member_type = '*ALL' OR RTRIM(M.MEMBER_TYPE) LIKE :member_type)

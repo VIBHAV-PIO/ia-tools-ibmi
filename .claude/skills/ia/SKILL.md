@@ -36,6 +36,11 @@ If a tool returns zero rows for a name you passed, the object/file/field **does 
 | Parameters passed by program X | `ia_call_parameters(member_name=X)` — one row per parameter per call site; same callee on different `call_line`s = multiple call sites, not duplicates | reading repeated rows as dupes |
 | Where-used / field impact for a SQL **long** name (e.g. `CUSTOMER_MASTER`, column `ERROR_MESSAGE`) | `ia_sql_table_names(name_pattern=X)` → take `system_short_name`, then `ia_find_object_usages` / `ia_file_field_impact_analysis` on that 10-char name | passing the long name straight to where-used — it matches only the 10-char system name and caps input at 10 chars, so it silently returns nothing |
 | Long↔short name of a SQL table/column vs a procedure/function | `ia_sql_table_names` (tables + columns) | `ia_sql_names` — that one covers routines (procedures/functions) only |
+| Which library / type is **object** X | `ia_object_lookup(object_name=X)` — compiled objects (`*PGM`/`*FILE`/`*SRVPGM`…). If empty, X may be a source-only member → fall back to `ia_member_lookup(member_name=X)` | `ia_member_lookup` first for a compiled object |
+| Member X "not found" by `ia_member_lookup` | pass the **bare** name (`IORDV11`) — exact names now resolve; only add `%` for prefix/substring search | concluding it's missing — a name shorter than 10 chars used to fail silently |
+| `ia_rpg_source` returns nothing | confirm `MEMBER_TYPE` first (`ia_member_lookup`): CL/CLLE/CLP → `ia_cl_source`; COBOL isn't in the RPG tables. Empty ≠ missing | assuming the source doesn't exist |
+| "Obsolete / unreferenced objects" | `ia_unused_objects` — source physical files (QRPGLESRC, QCLSRC…) are already excluded; remaining `*FILE` rows show `OBJECT_ATTRIBUTE` | treating every unreferenced `*FILE` as dead — DSPF/PRTF and SQL-only tables can be false positives |
+| Data files vs source files in a library | `ia_object_list(object_attribute='PF-DATA')` for data files, `'PF-SRC'` for source files; plain `PF` returns both with a `pf_kind` label | assuming a source library (QRPGLESRC etc.) has data files — it usually has none |
 
 ## Top 10 Tools (80% of Queries)
 
