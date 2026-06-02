@@ -31,7 +31,7 @@
 |------|---------|
 | `ia_call_hierarchy` | Returns callers and/or callees for a program or module; follows `*MENU`→`*PGM` so menu-launched programs appear |
 | `ia_call_parameters` | Parameters passed at each external call site; includes `call_line` + `call_type`. Same callee on different `call_line`s = multiple call sites, not duplicate rows |
-| `ia_circular_deps` | Detect circular dependencies: SELF recursion (A→A) + MUTUAL (A↔B); scans IAPGMCALLS **and** IAALLREFPF, with cycle_type + source_table columns |
+| `ia_circular_deps` | Detect circular dependencies: SELF recursion (A→A) + MUTUAL (A↔B); returns cycle_type + source_table columns |
 
 ## Program Internals
 

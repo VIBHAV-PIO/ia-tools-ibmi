@@ -71,7 +71,7 @@
 | Dead code (compiled)? | `ia_unused_objects` (source physical files excluded; each row shows `OBJECT_ATTRIBUTE`) |
 | Dead code (sources)? | `ia_uncompiled_sources` |
 | Complexity hotspots? | `ia_code_complexity` |
-| Circular call chains? | `ia_circular_deps` (SELF recursion + MUTUAL A↔B; scans IAPGMCALLS + IAALLREFPF) |
+| Circular call chains? | `ia_circular_deps` (SELF recursion + MUTUAL A↔B) |
 | Repo health / member inventory? | `ia_dashboard` |
 | List tables in iA library? | `ia_library_files` |
 | Raw RPG/CL token stream? | `ia_rpg_source_tokens`, `ia_cl_source_tokens` |
